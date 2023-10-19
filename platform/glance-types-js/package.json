@@ -1,0 +1,19 @@
+{
+  "name": "glance-types",
+  "description": "Types for mini-apps on the Glance dashboard platform",
+  "license": "MIT OR Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "update-json-schema": "json2ts ../../schema/app_data.json -o src/app_data.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "json-schema-to-typescript": "^13.1.1",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "env-paths": "^3.0.0"
+  }
+}

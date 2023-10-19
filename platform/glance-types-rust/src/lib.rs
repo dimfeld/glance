@@ -23,10 +23,12 @@ impl Paths {
     }
 
     /// The base data directory for the Glance platform
-    pub fn base_data_dir(&self) -> PathBuf {
+    pub fn base_data_dir() -> PathBuf {
         [
             dirs::data_local_dir().unwrap().to_string_lossy().as_ref(),
-            "glance",
+            "glance-dashboards",
+            #[cfg(os = "windows")]
+            "Data",
         ]
         .iter()
         .collect()
@@ -34,32 +36,16 @@ impl Paths {
 
     /// The directory that holds the app data files
     pub fn app_data_dir() -> PathBuf {
-        [
-            dirs::data_local_dir().unwrap().to_string_lossy().as_ref(),
-            "glance",
-            "app_data",
-        ]
-        .iter()
-        .collect()
+        Self::base_data_dir().join("app_data")
     }
 
     /// The JSON file that the app should write to
-    pub fn data_file(&self) -> PathBuf {
+    pub fn app_data_file(&self) -> PathBuf {
         Self::app_data_dir().join(format!("{}.json", self.app_id))
     }
 
     /// A directory that the app can optionally use to store its internal state.
     pub fn app_state_dir(&self) -> PathBuf {
-        let base_dir = dirs::state_dir()
-            .or_else(|| dirs::data_local_dir())
-            .unwrap();
-        [
-            base_dir.to_string_lossy().as_ref(),
-            "glance",
-            "app_state",
-            &self.app_id,
-        ]
-        .iter()
-        .collect()
+        Self::base_data_dir().join("app_state")
     }
 }
