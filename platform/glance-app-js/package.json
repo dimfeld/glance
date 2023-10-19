@@ -1,6 +1,6 @@
 {
-  "name": "glance-types",
-  "description": "Types for mini-apps on the Glance dashboard platform",
+  "name": "glance-app",
+  "description": "Types and helpers for mini-apps on the Glance dashboard platform",
   "license": "MIT OR Apache-2.0",
   "type": "module",
   "scripts": {

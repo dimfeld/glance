@@ -1,5 +1,5 @@
 [package]
-name = "glance-types"
+name = "glance-app"
 version = "0.1.0"
 edition = "2021"
 

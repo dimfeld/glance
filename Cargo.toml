@@ -3,7 +3,7 @@ resolver = "2"
 edition = "2021"
 members = [
     "platform/glance-core",
-    "platform/glance-types-rust"
+    "platform/glance-app-rust"
 ]
 
 [profile.release]

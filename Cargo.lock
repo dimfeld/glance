@@ -139,16 +139,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "glance-core"
-version = "0.1.0"
-dependencies = [
- "glance-types",
- "rusqlite",
- "rusqlite_migration",
-]
-
-[[package]]
-name = "glance-types"
+name = "glance-app"
 version = "0.1.0"
 dependencies = [
  "chrono",
@@ -156,6 +147,15 @@ dependencies = [
  "serde",
  "serde_json",
  "uuid",
+]
+
+[[package]]
+name = "glance-core"
+version = "0.1.0"
+dependencies = [
+ "glance-app",
+ "rusqlite",
+ "rusqlite_migration",
 ]
 
 [[package]]

@@ -6,13 +6,17 @@ import type { AppData } from './app_data.js';
 
 import envPaths from 'env-paths';
 
-export function appPaths(appId: string) {
+export function baseDataDir() {
   const paths = envPaths('glance-dashboards', { suffix: '' });
+  return paths.data;
+}
 
+export function appPaths(appId: string) {
+  const base = baseDataDir();
   return {
-    appDataFile: path.join(paths.data, 'app_data', `${appId}.json`),
-    tmpDataDir: path.join(paths.data, 'tmp'),
-    appStateDir: path.join(paths.data, 'app_state'),
+    appDataFile: path.join(base, 'app_data', `${appId}.json`),
+    appStateDir: path.join(base, 'app_state'),
+    tmpDataDir: path.join(base, 'tmp'),
   };
 }
 
