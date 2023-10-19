@@ -3,6 +3,8 @@
   "description": "Types and helpers for mini-apps on the Glance dashboard platform",
   "license": "MIT OR Apache-2.0",
   "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc",
     "update-json-schema": "json2ts ../../schema/app_data.json -o src/app_data.ts"

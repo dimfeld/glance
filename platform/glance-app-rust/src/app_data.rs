@@ -62,7 +62,8 @@ pub struct AppDataScheduleItem {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub arguments: Vec<String>,
     #[doc = "The cron schedule for the app"]
-    pub schedule: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cron: Option<String>,
 }
 impl From<&AppDataScheduleItem> for AppDataScheduleItem {
     fn from(value: &AppDataScheduleItem) -> Self {
@@ -320,13 +321,13 @@ pub mod builder {
     #[derive(Clone, Debug)]
     pub struct AppDataScheduleItem {
         arguments: Result<Vec<String>, String>,
-        schedule: Result<String, String>,
+        cron: Result<Option<String>, String>,
     }
     impl Default for AppDataScheduleItem {
         fn default() -> Self {
             Self {
                 arguments: Ok(Default::default()),
-                schedule: Err("no value supplied for schedule".to_string()),
+                cron: Ok(Default::default()),
             }
         }
     }
@@ -341,14 +342,14 @@ pub mod builder {
                 .map_err(|e| format!("error converting supplied value for arguments: {}", e));
             self
         }
-        pub fn schedule<T>(mut self, value: T) -> Self
+        pub fn cron<T>(mut self, value: T) -> Self
         where
-            T: std::convert::TryInto<String>,
+            T: std::convert::TryInto<Option<String>>,
             T::Error: std::fmt::Display,
         {
-            self.schedule = value
+            self.cron = value
                 .try_into()
-                .map_err(|e| format!("error converting supplied value for schedule: {}", e));
+                .map_err(|e| format!("error converting supplied value for cron: {}", e));
             self
         }
     }
@@ -357,7 +358,7 @@ pub mod builder {
         fn try_from(value: AppDataScheduleItem) -> Result<Self, String> {
             Ok(Self {
                 arguments: value.arguments?,
-                schedule: value.schedule?,
+                cron: value.cron?,
             })
         }
     }
@@ -365,7 +366,7 @@ pub mod builder {
         fn from(value: super::AppDataScheduleItem) -> Self {
             Self {
                 arguments: Ok(value.arguments),
-                schedule: Ok(value.schedule),
+                cron: Ok(value.cron),
             }
         }
     }

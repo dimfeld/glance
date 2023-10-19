@@ -30,7 +30,7 @@
               "type": "string"
             }
           },
-          "schedule": {
+          "cron": {
             "type": "string",
             "format": "cron",
             "description": "The cron schedule for the app"
