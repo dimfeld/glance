@@ -2,23 +2,39 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "app_data",
   "type": "object",
-  "required": [
-    "app",
-    "items"
-  ],
+  "required": ["app", "name", "path"],
   "properties": {
-    "app": {
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "stateless": {
-          "type": "boolean",
-          "description": "If true, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write"
+    "name": {
+      "type": "string",
+      "description": "The name of the app"
+    },
+    "stateless": {
+      "type": "boolean",
+      "description": "If true, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write"
+    },
+    "path": {
+      "type": "string",
+      "description": "The path at which this app is installed"
+    },
+    "schedule": {
+      "type": "array",
+      "description": "Request that the platform run the app at the specified schedule, if it does not have its own methods of scheduling updates",
+      "items": {
+        "type": "object",
+        "required": ["schedule"],
+        "properties": {
+          "arguments": {
+            "type": "array",
+            "description": "Arguments to pass to the app",
+            "items": {
+              "type": "string"
+            }
+          },
+          "schedule": {
+            "type": "string",
+            "format": "cron",
+            "description": "The cron schedule for the app"
+          }
         }
       }
     },
@@ -26,11 +42,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": [
-          "id",
-          "html",
-          "updated"
-        ],
+        "required": ["id", "html", "updated"],
         "properties": {
           "id": {
             "type": "string"
@@ -74,9 +86,7 @@
     },
     "notification": {
       "type": "object",
-      "required": [
-        "id", "html"
-      ],
+      "required": ["id", "html"],
       "properties": {
         "id": {
           "type": "string"

@@ -7,8 +7,18 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct AppData {
-    pub app: AppDataApp,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub items: Vec<AppDataItemsItem>,
+    #[doc = "The name of the app"]
+    pub name: String,
+    #[doc = "The path at which this app is installed"]
+    pub path: String,
+    #[doc = "Request that the platform run the app at the specified schedule, if it does not have its own methods of scheduling updates"]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub schedule: Vec<AppDataScheduleItem>,
+    #[doc = "If true, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write"]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stateless: Option<bool>,
 }
 impl From<&AppData> for AppData {
     fn from(value: &AppData) -> Self {
@@ -18,23 +28,6 @@ impl From<&AppData> for AppData {
 impl AppData {
     pub fn builder() -> builder::AppData {
         builder::AppData::default()
-    }
-}
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AppDataApp {
-    pub name: String,
-    #[doc = "If true, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write"]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub stateless: Option<bool>,
-}
-impl From<&AppDataApp> for AppDataApp {
-    fn from(value: &AppDataApp) -> Self {
-        value.clone()
-    }
-}
-impl AppDataApp {
-    pub fn builder() -> builder::AppDataApp {
-        builder::AppDataApp::default()
     }
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -61,6 +54,24 @@ impl From<&AppDataItemsItem> for AppDataItemsItem {
 impl AppDataItemsItem {
     pub fn builder() -> builder::AppDataItemsItem {
         builder::AppDataItemsItem::default()
+    }
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AppDataScheduleItem {
+    #[doc = "Arguments to pass to the app"]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub arguments: Vec<String>,
+    #[doc = "The cron schedule for the app"]
+    pub schedule: String,
+}
+impl From<&AppDataScheduleItem> for AppDataScheduleItem {
+    fn from(value: &AppDataScheduleItem) -> Self {
+        value.clone()
+    }
+}
+impl AppDataScheduleItem {
+    pub fn builder() -> builder::AppDataScheduleItem {
+        builder::AppDataScheduleItem::default()
     }
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -106,28 +117,24 @@ impl Notification {
 pub mod builder {
     #[derive(Clone, Debug)]
     pub struct AppData {
-        app: Result<super::AppDataApp, String>,
         items: Result<Vec<super::AppDataItemsItem>, String>,
+        name: Result<String, String>,
+        path: Result<String, String>,
+        schedule: Result<Vec<super::AppDataScheduleItem>, String>,
+        stateless: Result<Option<bool>, String>,
     }
     impl Default for AppData {
         fn default() -> Self {
             Self {
-                app: Err("no value supplied for app".to_string()),
-                items: Err("no value supplied for items".to_string()),
+                items: Ok(Default::default()),
+                name: Err("no value supplied for name".to_string()),
+                path: Err("no value supplied for path".to_string()),
+                schedule: Ok(Default::default()),
+                stateless: Ok(Default::default()),
             }
         }
     }
     impl AppData {
-        pub fn app<T>(mut self, value: T) -> Self
-        where
-            T: std::convert::TryInto<super::AppDataApp>,
-            T::Error: std::fmt::Display,
-        {
-            self.app = value
-                .try_into()
-                .map_err(|e| format!("error converting supplied value for app: {}", e));
-            self
-        }
         pub fn items<T>(mut self, value: T) -> Self
         where
             T: std::convert::TryInto<Vec<super::AppDataItemsItem>>,
@@ -138,38 +145,6 @@ pub mod builder {
                 .map_err(|e| format!("error converting supplied value for items: {}", e));
             self
         }
-    }
-    impl std::convert::TryFrom<AppData> for super::AppData {
-        type Error = String;
-        fn try_from(value: AppData) -> Result<Self, String> {
-            Ok(Self {
-                app: value.app?,
-                items: value.items?,
-            })
-        }
-    }
-    impl From<super::AppData> for AppData {
-        fn from(value: super::AppData) -> Self {
-            Self {
-                app: Ok(value.app),
-                items: Ok(value.items),
-            }
-        }
-    }
-    #[derive(Clone, Debug)]
-    pub struct AppDataApp {
-        name: Result<String, String>,
-        stateless: Result<Option<bool>, String>,
-    }
-    impl Default for AppDataApp {
-        fn default() -> Self {
-            Self {
-                name: Err("no value supplied for name".to_string()),
-                stateless: Ok(Default::default()),
-            }
-        }
-    }
-    impl AppDataApp {
         pub fn name<T>(mut self, value: T) -> Self
         where
             T: std::convert::TryInto<String>,
@@ -178,6 +153,26 @@ pub mod builder {
             self.name = value
                 .try_into()
                 .map_err(|e| format!("error converting supplied value for name: {}", e));
+            self
+        }
+        pub fn path<T>(mut self, value: T) -> Self
+        where
+            T: std::convert::TryInto<String>,
+            T::Error: std::fmt::Display,
+        {
+            self.path = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for path: {}", e));
+            self
+        }
+        pub fn schedule<T>(mut self, value: T) -> Self
+        where
+            T: std::convert::TryInto<Vec<super::AppDataScheduleItem>>,
+            T::Error: std::fmt::Display,
+        {
+            self.schedule = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for schedule: {}", e));
             self
         }
         pub fn stateless<T>(mut self, value: T) -> Self
@@ -191,19 +186,25 @@ pub mod builder {
             self
         }
     }
-    impl std::convert::TryFrom<AppDataApp> for super::AppDataApp {
+    impl std::convert::TryFrom<AppData> for super::AppData {
         type Error = String;
-        fn try_from(value: AppDataApp) -> Result<Self, String> {
+        fn try_from(value: AppData) -> Result<Self, String> {
             Ok(Self {
+                items: value.items?,
                 name: value.name?,
+                path: value.path?,
+                schedule: value.schedule?,
                 stateless: value.stateless?,
             })
         }
     }
-    impl From<super::AppDataApp> for AppDataApp {
-        fn from(value: super::AppDataApp) -> Self {
+    impl From<super::AppData> for AppData {
+        fn from(value: super::AppData) -> Self {
             Self {
+                items: Ok(value.items),
                 name: Ok(value.name),
+                path: Ok(value.path),
+                schedule: Ok(value.schedule),
                 stateless: Ok(value.stateless),
             }
         }
@@ -313,6 +314,58 @@ pub mod builder {
                 id: Ok(value.id),
                 notify: Ok(value.notify),
                 updated: Ok(value.updated),
+            }
+        }
+    }
+    #[derive(Clone, Debug)]
+    pub struct AppDataScheduleItem {
+        arguments: Result<Vec<String>, String>,
+        schedule: Result<String, String>,
+    }
+    impl Default for AppDataScheduleItem {
+        fn default() -> Self {
+            Self {
+                arguments: Ok(Default::default()),
+                schedule: Err("no value supplied for schedule".to_string()),
+            }
+        }
+    }
+    impl AppDataScheduleItem {
+        pub fn arguments<T>(mut self, value: T) -> Self
+        where
+            T: std::convert::TryInto<Vec<String>>,
+            T::Error: std::fmt::Display,
+        {
+            self.arguments = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for arguments: {}", e));
+            self
+        }
+        pub fn schedule<T>(mut self, value: T) -> Self
+        where
+            T: std::convert::TryInto<String>,
+            T::Error: std::fmt::Display,
+        {
+            self.schedule = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for schedule: {}", e));
+            self
+        }
+    }
+    impl std::convert::TryFrom<AppDataScheduleItem> for super::AppDataScheduleItem {
+        type Error = String;
+        fn try_from(value: AppDataScheduleItem) -> Result<Self, String> {
+            Ok(Self {
+                arguments: value.arguments?,
+                schedule: value.schedule?,
+            })
+        }
+    }
+    impl From<super::AppDataScheduleItem> for AppDataScheduleItem {
+        fn from(value: super::AppDataScheduleItem) -> Self {
+            Self {
+                arguments: Ok(value.arguments),
+                schedule: Ok(value.schedule),
             }
         }
     }

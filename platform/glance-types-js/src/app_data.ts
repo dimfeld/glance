@@ -6,15 +6,33 @@
  */
 
 export interface AppData {
-  app: {
-    name: string;
+  /**
+   * The name of the app
+   */
+  name: string;
+  /**
+   * If true, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write
+   */
+  stateless?: boolean;
+  /**
+   * The path at which this app is installed
+   */
+  path: string;
+  /**
+   * Request that the platform run the app at the specified schedule, if it does not have its own methods of scheduling updates
+   */
+  schedule?: {
     /**
-     * If true, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write
+     * Arguments to pass to the app
      */
-    stateless?: boolean;
+    arguments?: string[];
+    /**
+     * The cron schedule for the app
+     */
+    schedule: string;
     [k: string]: unknown;
-  };
-  items: {
+  }[];
+  items?: {
     id: string;
     /**
      * HTML to display for the item's label
