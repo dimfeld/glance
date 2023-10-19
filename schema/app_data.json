@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "app": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "html": {
+            "type": "string",
+            "description": "HTML to display for the item's label"
+          },
+          "data": {
+            "type": "object",
+            "description": "Extra structured data for use by chart or other formatters",
+            "properties": {}
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Date the item was last updated"
+          },
+          "charts": {
+            "type": "array",
+            "description": "Charts to display for this item",
+            "items": {
+              "$ref": "#/$defs/chart"
+            }
+          },
+          "notify": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/notification"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "html",
+          "updated"
+        ]
+      }
+    }
+  },
+  "required": [
+    "app",
+    "items"
+  ],
+  "$defs": {
+    "chart": {
+      "type": "object",
+      "$comment": "Format to be determined",
+      "properties": {}
+    },
+    "notification": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "html": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
