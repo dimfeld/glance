@@ -1,2 +1,5 @@
+_default:
+  @just --list
+
 update-json-schema:
-  true # TODO update JS and Rust packages once they exist
+  cargo typify -o platform/glance-types-rust/src/app_data.rs schema/app_data.json

@@ -1,26 +1,39 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "app_data",
   "type": "object",
+  "required": [
+    "app",
+    "items"
+  ],
   "properties": {
     "app": {
       "type": "object",
+      "required": [
+        "name"
+      ],
       "properties": {
         "name": {
           "type": "string"
+        },
+        "stateless": {
+          "type": "boolean",
+          "description": "If true, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write"
         }
-      },
-      "required": [
-        "name"
-      ]
+      }
     },
     "items": {
       "type": "array",
       "items": {
         "type": "object",
+        "required": [
+          "id",
+          "html",
+          "updated"
+        ],
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
+            "type": "string"
           },
           "html": {
             "type": "string",
@@ -49,19 +62,10 @@
               "$ref": "#/$defs/notification"
             }
           }
-        },
-        "required": [
-          "id",
-          "html",
-          "updated"
-        ]
+        }
       }
     }
   },
-  "required": [
-    "app",
-    "items"
-  ],
   "$defs": {
     "chart": {
       "type": "object",
@@ -70,6 +74,9 @@
     },
     "notification": {
       "type": "object",
+      "required": [
+        "id", "html"
+      ],
       "properties": {
         "id": {
           "type": "string"

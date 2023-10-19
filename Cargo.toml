@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+edition = "2021"
+members = [
+    "platform/glance-core",
+    "platform/glance-types-rust"
+]
+
+[profile.release]
+debug = 1
+
