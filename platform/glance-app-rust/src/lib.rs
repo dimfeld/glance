@@ -10,6 +10,9 @@ use std::path::PathBuf;
 
 pub use app_data::*;
 
+#[doc(hidden)]
+pub const APP_DATA_SUBDIR: &'static str = "app_data";
+
 /// Common logic useful for mini-apps
 pub struct App {
     /// The name of the application
@@ -36,7 +39,7 @@ impl App {
 
     /// The directory that holds the app data files
     pub fn data_dir() -> PathBuf {
-        Self::base_data_dir().join("app_data")
+        Self::base_data_dir().join(APP_DATA_SUBDIR)
     }
 
     /// The directory that holds temporary data when it needs to be on the same fileysystem.
@@ -65,11 +68,9 @@ impl App {
                 .as_millis()
         ));
 
-        std::fs::write(
-            &tmp_path,
-            serde_json::to_string(&data)
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?,
-        )?;
+        let file = std::fs::File::create(&tmp_path)?;
+        serde_json::to_writer_pretty(&file, &data)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
         let final_path = self.data_file();
         std::fs::rename(&tmp_path, &final_path)?;
