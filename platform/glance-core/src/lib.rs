@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use glance_app::App;
 
+pub mod error;
 #[cfg(feature = "fs-source")]
 mod fs_source;
 
