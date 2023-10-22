@@ -62,8 +62,7 @@ pub struct AppDataScheduleItem {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub arguments: Vec<String>,
     #[doc = "The cron schedule for the app"]
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cron: Option<String>,
+    pub cron: String,
 }
 impl From<&AppDataScheduleItem> for AppDataScheduleItem {
     fn from(value: &AppDataScheduleItem) -> Self {
@@ -321,13 +320,13 @@ pub mod builder {
     #[derive(Clone, Debug)]
     pub struct AppDataScheduleItem {
         arguments: Result<Vec<String>, String>,
-        cron: Result<Option<String>, String>,
+        cron: Result<String, String>,
     }
     impl Default for AppDataScheduleItem {
         fn default() -> Self {
             Self {
                 arguments: Ok(Default::default()),
-                cron: Ok(Default::default()),
+                cron: Err("no value supplied for cron".to_string()),
             }
         }
     }
@@ -344,7 +343,7 @@ pub mod builder {
         }
         pub fn cron<T>(mut self, value: T) -> Self
         where
-            T: std::convert::TryInto<Option<String>>,
+            T: std::convert::TryInto<String>,
             T::Error: std::fmt::Display,
         {
             self.cron = value

@@ -21,7 +21,7 @@
       "description": "Request that the platform run the app at the specified schedule, if it does not have its own methods of scheduling updates",
       "items": {
         "type": "object",
-        "required": ["schedule"],
+        "required": ["cron"],
         "properties": {
           "arguments": {
             "type": "array",

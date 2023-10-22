@@ -29,7 +29,7 @@ export interface AppData {
     /**
      * The cron schedule for the app
      */
-    cron?: string;
+    cron: string;
     [k: string]: unknown;
   }[];
   items?: {
