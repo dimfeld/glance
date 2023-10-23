@@ -68,6 +68,11 @@
               "$ref": "#/$defs/chart"
             }
           },
+          "dismissible": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether the item can be dismissed by the viewer"
+          },
           "notify": {
             "type": "array",
             "items": {

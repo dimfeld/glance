@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct AppData {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub items: Vec<AppDataItemsItem>,
@@ -30,7 +30,7 @@ impl AppData {
         builder::AppData::default()
     }
 }
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct AppDataItemsItem {
     #[doc = "Charts to display for this item"]
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -38,6 +38,9 @@ pub struct AppDataItemsItem {
     #[doc = "Extra structured data for use by chart or other formatters"]
     #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
     pub data: serde_json::Map<String, serde_json::Value>,
+    #[doc = "Whether the item can be dismissed by the viewer"]
+    #[serde(default)]
+    pub dismissible: bool,
     #[doc = "HTML to display for the item's label"]
     pub html: String,
     pub id: String,
@@ -56,7 +59,7 @@ impl AppDataItemsItem {
         builder::AppDataItemsItem::default()
     }
 }
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct AppDataScheduleItem {
     #[doc = "Arguments to pass to the app"]
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -74,7 +77,7 @@ impl AppDataScheduleItem {
         builder::AppDataScheduleItem::default()
     }
 }
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Chart(pub serde_json::Map<String, serde_json::Value>);
 impl std::ops::Deref for Chart {
     type Target = serde_json::Map<String, serde_json::Value>;
@@ -97,7 +100,7 @@ impl From<serde_json::Map<String, serde_json::Value>> for Chart {
         Self(value)
     }
 }
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Notification {
     pub html: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -213,6 +216,7 @@ pub mod builder {
     pub struct AppDataItemsItem {
         charts: Result<Vec<super::Chart>, String>,
         data: Result<serde_json::Map<String, serde_json::Value>, String>,
+        dismissible: Result<bool, String>,
         html: Result<String, String>,
         id: Result<String, String>,
         notify: Result<Vec<super::Notification>, String>,
@@ -223,6 +227,7 @@ pub mod builder {
             Self {
                 charts: Ok(Default::default()),
                 data: Ok(Default::default()),
+                dismissible: Ok(Default::default()),
                 html: Err("no value supplied for html".to_string()),
                 id: Err("no value supplied for id".to_string()),
                 notify: Ok(Default::default()),
@@ -249,6 +254,16 @@ pub mod builder {
             self.data = value
                 .try_into()
                 .map_err(|e| format!("error converting supplied value for data: {}", e));
+            self
+        }
+        pub fn dismissible<T>(mut self, value: T) -> Self
+        where
+            T: std::convert::TryInto<bool>,
+            T::Error: std::fmt::Display,
+        {
+            self.dismissible = value
+                .try_into()
+                .map_err(|e| format!("error converting supplied value for dismissible: {}", e));
             self
         }
         pub fn html<T>(mut self, value: T) -> Self
@@ -298,6 +313,7 @@ pub mod builder {
             Ok(Self {
                 charts: value.charts?,
                 data: value.data?,
+                dismissible: value.dismissible?,
                 html: value.html?,
                 id: value.id?,
                 notify: value.notify?,
@@ -310,6 +326,7 @@ pub mod builder {
             Self {
                 charts: Ok(value.charts),
                 data: Ok(value.data),
+                dismissible: Ok(value.dismissible),
                 html: Ok(value.html),
                 id: Ok(value.id),
                 notify: Ok(value.notify),

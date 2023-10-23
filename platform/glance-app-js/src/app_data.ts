@@ -52,6 +52,10 @@ export interface AppData {
      * Charts to display for this item
      */
     charts?: Chart[];
+    /**
+     * Whether the item can be dismissed by the viewer
+     */
+    dismissible?: boolean;
     notify?: Notification[];
     [k: string]: unknown;
   }[];
