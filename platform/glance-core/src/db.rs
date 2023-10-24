@@ -75,6 +75,10 @@ impl Db {
 
         Ok(items)
     }
+
+    pub fn read_active_items(&self) -> Result<Vec<AppItems>, Report<Error>> {
+        todo!()
+    }
 }
 
 pub fn get_column<T: FromSql>(

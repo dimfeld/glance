@@ -3,6 +3,15 @@ use std::ops::Deref;
 use glance_app::AppDataItemsItem;
 use serde::Deserialize;
 
+pub struct AppInfo {
+    pub name: String,
+}
+
+pub struct AppItems {
+    pub app: AppInfo,
+    pub items: Vec<Item>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Item {
     #[serde(flatten)]
