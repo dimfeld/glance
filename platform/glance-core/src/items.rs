@@ -4,7 +4,10 @@ use glance_app::AppDataItemsItem;
 use serde::Deserialize;
 
 pub struct AppInfo {
+    pub id: String,
     pub name: String,
+    pub path: String,
+    pub stateless: bool,
 }
 
 pub struct AppItems {
@@ -14,6 +17,7 @@ pub struct AppItems {
 
 #[derive(Debug, Deserialize)]
 pub struct Item {
+    pub app_id: String,
     #[serde(flatten)]
     pub item: AppDataItemsItem,
     pub active: bool,

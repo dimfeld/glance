@@ -1,14 +1,18 @@
 mod migrations;
 
-use std::path::Path;
+use std::{collections::HashMap, path::Path, rc::Rc};
 
 use error_stack::{Report, ResultExt};
 use glance_app::AppDataItemsItem;
-use rusqlite::{types::FromSql, Row};
+use itertools::Itertools;
+use rusqlite::{types::FromSql, Connection, Params, Row};
 use serde::{de::DeserializeOwned, Deserialize};
 
 use self::migrations::run_migrations;
-use crate::{error::Error, items::Item};
+use crate::{
+    error::Error,
+    items::{AppInfo, AppItems, Item},
+};
 
 #[derive(Clone)]
 pub struct Db {
@@ -35,12 +39,14 @@ impl Db {
         Ok(Self { pool })
     }
 
-    /// Read the active items for the given app from the database
-    pub fn read_app_items(&self, app_id: &str) -> Result<Vec<Item>, Report<Error>> {
-        let conn = self.pool.get().change_context(Error::Db)?;
-        let items = conn
-            .prepare_cached(
-                r##"SELECT id, html, data, charts, updated, dismissible, active,
+    fn get_items(
+        &self,
+        conn: &Connection,
+        where_clause: &str,
+        params: impl Params,
+    ) -> Result<Vec<Item>, Report<Error>> {
+        let query = format!(
+            r##"SELECT id, app_id, html, data, charts, updated, dismissible, active,
                     json_group_array(json_object(
                         'id', noti.id,
                         'html', noti.html,
@@ -50,22 +56,26 @@ impl Db {
                 FROM items
                 LEFT JOIN item_notifications noti
                     ON items.id = noti.item_id AND items.app_id == noti.app_id AND noti.active
-                WHERE app_id = ?
-                GROUP BY items.id"##,
-            )
+                {where_clause}
+                GROUP BY items.id, items.app_id"##,
+        );
+
+        let items = conn
+            .prepare_cached(&query)
             .change_context(Error::Db)?
-            .query_and_then([app_id], |row| {
+            .query_and_then(params, |row| {
                 let data = Item {
+                    app_id: get_column(row, 1, "app_id")?,
                     item: AppDataItemsItem {
                         id: get_column(row, 0, "id")?,
-                        html: get_column(row, 1, "html")?,
-                        data: get_json_column(row, 2, "data")?,
-                        charts: get_json_column(row, 3, "charts")?,
-                        updated: get_column(row, 4, "updated")?,
-                        dismissible: get_column(row, 5, "dismissible")?,
-                        notify: get_json_column(row, 7, "notifications")?,
+                        html: get_column(row, 2, "html")?,
+                        data: get_json_column(row, 3, "data")?,
+                        charts: get_json_column(row, 4, "charts")?,
+                        updated: get_column(row, 5, "updated")?,
+                        dismissible: get_column(row, 6, "dismissible")?,
+                        notify: get_json_column(row, 8, "notifications")?,
                     },
-                    active: get_column(row, 6, "active")?,
+                    active: get_column(row, 7, "active")?,
                 };
 
                 Ok::<_, Error>(data)
@@ -76,8 +86,61 @@ impl Db {
         Ok(items)
     }
 
+    /// Read all the items for the given app from the database
+    pub fn read_app_items(&self, app_id: &str) -> Result<Vec<Item>, Report<Error>> {
+        let conn = self.pool.get().change_context(Error::Db)?;
+        self.get_items(&conn, "WHERE app_id = ?", &[app_id])
+    }
+
+    /// Read all the active items for all apps from the database
     pub fn read_active_items(&self) -> Result<Vec<AppItems>, Report<Error>> {
-        todo!()
+        let conn = self.pool.get().change_context(Error::Db)?;
+        let mut items = self.get_items(&conn, "active = true", [])?;
+        items.sort_unstable_by(|i1, i2| i1.app_id.cmp(&i2.app_id));
+
+        let app_ids = items
+            .iter()
+            .map(|item| &item.app_id)
+            // todo itertools
+            .dedup()
+            .cloned()
+            .map(rusqlite::types::Value::from)
+            .collect::<Vec<_>>();
+
+        let mut items_by_app_id = items
+            .into_iter()
+            .into_grouping_map_by(|item| item.app_id.clone())
+            .collect::<Vec<_>>();
+
+        let apps = conn
+            .prepare_cached(
+                r##"SELECT id, name, path, stateless
+            FROM apps
+            WHERE id IN rarray(?)"##,
+            )
+            .change_context(Error::Db)?
+            .query_and_then([Rc::new(app_ids)], |row| {
+                let app = AppInfo {
+                    id: get_column(row, 0, "id")?,
+                    name: get_column(row, 1, "name")?,
+                    path: get_column(row, 2, "path")?,
+                    stateless: get_column(row, 3, "stateless")?,
+                };
+
+                Ok::<_, Error>(app)
+            })
+            .change_context(Error::Db)?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let apps_with_items = apps
+            .into_iter()
+            .map(|app| {
+                let items = items_by_app_id.remove(&app.id).unwrap_or_default();
+                AppItems { app, items }
+            })
+            .collect::<Vec<_>>();
+
+        Ok(apps_with_items)
     }
 }
 

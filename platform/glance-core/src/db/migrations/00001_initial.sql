@@ -1,5 +1,6 @@
 CREATE TABLE apps (
   id text primary key,
+  name text not null,
   path text not null,
   stateless boolean not null default false,
 );
@@ -23,6 +24,8 @@ CREATE TABLE items (
   (id, app_id) primary key
 );
 
+CREATE INDEX ON items (app_id);
+
 CREATE TABLE item_notifications (
   id text primary key,
   item_id text references items(id) ON DELETE CASCADE,
@@ -31,3 +34,6 @@ CREATE TABLE item_notifications (
   icon text,
   active boolean default true
 );
+
+CREATE INDEX ON item_notifications (item_id);
+CREATE INDEX ON item_notifications (app_id);
