@@ -5,8 +5,11 @@ use std::{collections::HashMap, path::Path, rc::Rc};
 use error_stack::{Report, ResultExt};
 use glance_app::AppDataItemsItem;
 use itertools::Itertools;
-use rusqlite::{types::FromSql, Connection, Params, Row};
-use serde::{de::DeserializeOwned, Deserialize};
+use serde::de::DeserializeOwned;
+use sqlx::{
+    postgres::{PgPool, PgPoolOptions},
+    Connection,
+};
 
 use self::migrations::run_migrations;
 use crate::{
@@ -16,25 +19,13 @@ use crate::{
 
 #[derive(Clone)]
 pub struct Db {
-    pub pool: r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>,
+    pub pool: sqlx::PgPool,
 }
 
 impl Db {
-    pub fn new(db_path: &Path) -> Result<Self, Report<Error>> {
-        let manager = r2d2_sqlite::SqliteConnectionManager::file(db_path).with_init(|c| {
-            c.execute_batch(
-                r##"
-              PRAGMA journal_mode = wal;
-              PRAGMA synchronous = normal;
-              PRAGMA foreign_keys = ON;
-                "##,
-            )
-        });
-
-        let pool = r2d2::Pool::new(manager).expect("creating database pool");
-
-        let mut conn = pool.get().change_context(Error::DbInit)?;
-        run_migrations(&mut conn).change_context(Error::DbInit)?;
+    pub async fn new(database_url: &str) -> Result<Self, Report<Error>> {
+        let pool = PgPool::connect(database_url).await?;
+        sqlx::migrate!().run(&pool).await?;
 
         Ok(Self { pool })
     }
