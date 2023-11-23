@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
-edition = "2021"
 members = [
+    "dev-utils",
     "platform/core",
     "platform/app-rust"
 ]

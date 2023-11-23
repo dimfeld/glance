@@ -8,6 +8,13 @@ edition = "2021"
 [dependencies]
 chrono = { version = "0.4.31", features = ["serde"] }
 dirs = "5.0.1"
+schemars = { version = "0.8.16", optional = true, features = ["chrono", "raw_value"] }
 serde = { version = "1.0.189", features = ["derive"] }
 serde_json = "1.0.107"
+sqlx = { version = "0.7.2", optional = true, features = ["runtime-tokio", "tls-rustls"] }
 uuid = { version = "1.5.0", features = ["serde"] }
+
+[features]
+default = []
+sqlx = ["dep:sqlx"]
+json-schema = ["dep:schemars"]

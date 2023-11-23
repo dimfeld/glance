@@ -1,105 +1,115 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "app_data",
+  "title": "AppData",
   "type": "object",
-  "required": ["app", "name", "path"],
+  "required": [
+    "name",
+    "path"
+  ],
   "properties": {
-    "name": {
-      "type": "string",
-      "description": "The name of the app"
-    },
-    "stateless": {
-      "type": "boolean",
-      "description": "If true, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write"
-    },
-    "path": {
-      "type": "string",
-      "description": "The path at which this app is installed"
-    },
-    "schedule": {
-      "type": "array",
-      "description": "Request that the platform run the app at the specified schedule, if it does not have its own methods of scheduling updates",
-      "items": {
-        "type": "object",
-        "required": ["cron"],
-        "properties": {
-          "arguments": {
-            "type": "array",
-            "description": "Arguments to pass to the app",
-            "items": {
-              "type": "string"
-            }
-          },
-          "cron": {
-            "type": "string",
-            "format": "cron",
-            "description": "The cron schedule for the app"
-          }
-        }
-      }
-    },
     "items": {
       "type": "array",
       "items": {
-        "type": "object",
-        "required": ["id", "html", "updated"],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "html": {
-            "type": "string",
-            "description": "HTML to display for the item's label"
-          },
-          "data": {
-            "type": "object",
-            "description": "Extra structured data for use by chart or other formatters",
-            "properties": {}
-          },
-          "updated": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Date the item was last updated"
-          },
-          "charts": {
-            "type": "array",
-            "description": "Charts to display for this item",
-            "items": {
-              "$ref": "#/$defs/chart"
-            }
-          },
-          "dismissible": {
-            "type": "boolean",
-            "default": false,
-            "description": "Whether the item can be dismissed by the viewer"
-          },
-          "notify": {
-            "type": "array",
-            "items": {
-              "$ref": "#/$defs/notification"
-            }
-          }
-        }
+        "$ref": "#/definitions/AppDataItem"
       }
+    },
+    "name": {
+      "description": "The name of the app",
+      "type": "string"
+    },
+    "path": {
+      "description": "The path at which this app is installed",
+      "type": "string"
+    },
+    "schedule": {
+      "description": "Request that the platform run the app at the specified schedule, if it does not have its own methods of scheduling updates",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AppDataSchedule"
+      }
+    },
+    "stateful": {
+      "description": "If false, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write If true, the app can just check the updated timestamp to see if an item has changed",
+      "default": false,
+      "type": "boolean"
     }
   },
-  "$defs": {
-    "chart": {
+  "definitions": {
+    "AppDataItem": {
       "type": "object",
-      "$comment": "Format to be determined",
-      "properties": {}
-    },
-    "notification": {
-      "type": "object",
-      "required": ["id", "html"],
+      "required": [
+        "html",
+        "id",
+        "updated"
+      ],
       "properties": {
+        "data": {
+          "description": "Extra structured data for use by chart or other formatters",
+          "type": "object",
+          "additionalProperties": true
+        },
+        "dismissible": {
+          "description": "Whether the item can be dismissed by the viewer",
+          "default": false,
+          "type": "boolean"
+        },
+        "html": {
+          "description": "HTML to display for the item's label",
+          "type": "string"
+        },
         "id": {
           "type": "string"
         },
-        "icon": {
+        "notify": {
+          "description": "Notifications for this item",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Notification"
+          }
+        },
+        "updated": {
+          "description": "Date the item was last updated",
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "AppDataSchedule": {
+      "type": "object",
+      "required": [
+        "cron"
+      ],
+      "properties": {
+        "arguments": {
+          "description": "Arguments to pass to the app",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cron": {
+          "description": "The cron schedule for the app",
+          "type": "string"
+        }
+      }
+    },
+    "Notification": {
+      "type": "object",
+      "required": [
+        "html",
+        "id"
+      ],
+      "properties": {
+        "html": {
           "type": "string"
         },
-        "html": {
+        "icon": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
           "type": "string"
         }
       }

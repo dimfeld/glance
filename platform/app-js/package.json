@@ -7,7 +7,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "update-json-schema": "json2ts ../../schema/app_data.json -o src/app_data.ts"
+    "update-json-schema": "json2ts ../../schema/app_data.json --additionalProperties false -o src/app_data.ts"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -10,7 +10,7 @@ resolver = "2"
 effectum = "0.3.0"
 error-stack = { version = "0.4.1", features = ["eyre"] }
 flume = { version = "0.11.0", default-features = false }
-glance-app = { path = "../app-rust" }
+glance-app = { path = "../app-rust", features = ["sqlx"] }
 itertools = "0.11.0"
 notify-debouncer-mini = { version = "0.4.1", optional = true }
 serde = { version = "1.0.189", features = ["derive"] }

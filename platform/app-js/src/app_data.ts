@@ -6,14 +6,11 @@
  */
 
 export interface AppData {
+  items?: AppDataItem[];
   /**
    * The name of the app
    */
   name: string;
-  /**
-   * If true, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write
-   */
-  stateless?: boolean;
   /**
    * The path at which this app is installed
    */
@@ -21,52 +18,49 @@ export interface AppData {
   /**
    * Request that the platform run the app at the specified schedule, if it does not have its own methods of scheduling updates
    */
-  schedule?: {
-    /**
-     * Arguments to pass to the app
-     */
-    arguments?: string[];
-    /**
-     * The cron schedule for the app
-     */
-    cron: string;
-    [k: string]: unknown;
-  }[];
-  items?: {
-    id: string;
-    /**
-     * HTML to display for the item's label
-     */
-    html: string;
-    /**
-     * Extra structured data for use by chart or other formatters
-     */
-    data?: {
-      [k: string]: unknown;
-    };
-    /**
-     * Date the item was last updated
-     */
-    updated: string;
-    /**
-     * Charts to display for this item
-     */
-    charts?: Chart[];
-    /**
-     * Whether the item can be dismissed by the viewer
-     */
-    dismissible?: boolean;
-    notify?: Notification[];
-    [k: string]: unknown;
-  }[];
-  [k: string]: unknown;
+  schedule?: AppDataSchedule[];
+  /**
+   * If false, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write If true, the app can just check the updated timestamp to see if an item has changed
+   */
+  stateful?: boolean;
 }
-export interface Chart {
-  [k: string]: unknown;
+export interface AppDataItem {
+  /**
+   * Extra structured data for use by chart or other formatters
+   */
+  data?: {
+    [k: string]: unknown;
+  };
+  /**
+   * Whether the item can be dismissed by the viewer
+   */
+  dismissible?: boolean;
+  /**
+   * HTML to display for the item's label
+   */
+  html: string;
+  id: string;
+  /**
+   * Notifications for this item
+   */
+  notify?: Notification[];
+  /**
+   * Date the item was last updated
+   */
+  updated: string;
 }
 export interface Notification {
-  id: string;
-  icon?: string;
   html: string;
-  [k: string]: unknown;
+  icon?: string | null;
+  id: string;
+}
+export interface AppDataSchedule {
+  /**
+   * Arguments to pass to the app
+   */
+  arguments?: string[];
+  /**
+   * The cron schedule for the app
+   */
+  cron: string;
 }
