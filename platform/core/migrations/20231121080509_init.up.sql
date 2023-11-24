@@ -3,6 +3,7 @@ CREATE TABLE apps (
   name text NOT NULL,
   path text NOT NULL,
   stateful boolean NOT NULL DEFAULT false,
+  updated_at timestamptz not null default now(),
   error text
 );
 

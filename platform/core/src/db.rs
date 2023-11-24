@@ -2,10 +2,7 @@ use error_stack::{Report, ResultExt};
 use glance_app::{AppData, Notification};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use sqlx::{
-    postgres::{PgConnection, PgPool},
-    Connection, Transaction,
-};
+use sqlx::postgres::{PgConnection, PgPool};
 use sqlx_transparent_json_decode::BoxedRawValue;
 use tracing::{event, instrument, Level};
 
@@ -14,22 +11,30 @@ use crate::{
     items::{AppInfo, AppItems, Item},
 };
 
+/// The database for the glance platform
 #[derive(Clone)]
 pub struct Db {
     pub(crate) pool: sqlx::PgPool,
 }
 
+/// Event types that can be recorded
 #[derive(Debug, Serialize, Deserialize, sqlx::Type)]
 #[serde(rename_all = "snake_case")]
 pub enum EventType {
+    /// An item was created for the first time
     CreateItem,
+    /// An existing item was updated
     UpdateItem,
+    /// An item was removed
     RemoveItem,
+    /// An app and its items were removed
     RemoveApp,
+    /// A scheduled app was executed
     ScheduledRun,
 }
 
 impl Db {
+    /// Create a new database connection and run migrations if needed.
     pub async fn new(database_url: &str) -> Result<Self, Report<Error>> {
         let pool = PgPool::connect(database_url)
             .await
@@ -58,10 +63,15 @@ impl Db {
         Ok(())
     }
 
+    /// Record an error reading the data for an app.
     #[instrument(skip(self))]
-    pub async fn set_app_error(&self, app_id: &str, error: &str) -> Result<(), Report<Error>> {
+    pub async fn update_app_status(
+        &self,
+        app_id: &str,
+        error: Option<&str>,
+    ) -> Result<(), Report<Error>> {
         sqlx::query!(
-            r##"UPDATE apps SET error = $2 WHERE id = $1"##,
+            r##"UPDATE apps SET updated_at = now(), error = $2 WHERE id = $1"##,
             app_id,
             error
         )

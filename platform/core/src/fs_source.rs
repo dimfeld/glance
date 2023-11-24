@@ -9,12 +9,13 @@ use glance_app::APP_DATA_SUBDIR;
 use notify_debouncer_mini::{new_debouncer, notify::RecursiveMode, DebounceEventResult};
 use thiserror::Error;
 
-use crate::AppFileInput;
+use crate::{AppFileContents, AppFileInput};
 
 #[derive(Debug, Error)]
 #[error("Watcher error")]
 pub struct WatcherError {}
 
+/// Monitor a directory for updated .json files
 pub struct FsSource {
     // Hold a reference to keep things open, until this is dropped
     shutdown_tx: flume::Sender<()>,
@@ -127,7 +128,7 @@ fn read_file(path: &Path) -> Result<Option<AppFileInput>, std::io::Error> {
                 // The file was deleted.
                 return Ok(Some(AppFileInput {
                     app_id,
-                    contents: None,
+                    contents: AppFileContents::Empty,
                 }));
             } else {
                 return Err(e);
@@ -137,6 +138,6 @@ fn read_file(path: &Path) -> Result<Option<AppFileInput>, std::io::Error> {
 
     Ok(Some(AppFileInput {
         app_id,
-        contents: Some(data),
+        contents: AppFileContents::Raw(data),
     }))
 }

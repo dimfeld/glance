@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 
 use db::Db;
-use glance_app::App;
+use glance_app::{App, AppData};
 
 /// Database implementation
 pub mod db;
@@ -15,12 +15,29 @@ mod fs_source;
 mod handle_changes;
 mod items;
 
+/// An app data update
+pub enum AppFileContents {
+    /// There was no input, indicating that the app should be removed.
+    Empty,
+    /// The raw input before parsing. This should be used when the data is written and read
+    /// asynchronously, as when the data is written to disk and detected via a watcher.
+    Raw(String),
+    /// The fully-parsed input. This can be used when the data is read synchronously and errors can
+    /// be returned directly to the submitter, as when interacting through an HTTP interface.
+    Parsed(Box<AppData>),
+}
+
+impl AppFileContents {
+    /// Return true if there is no data
+    pub fn is_empty(&self) -> bool {
+        matches!(self, Self::Empty)
+    }
+}
+
+/// Input to the platform of an app's data, to be reconciled against the existing data.
 pub struct AppFileInput {
     app_id: String,
-    /// The raw contents of the file. We don't serialize upon reading so that serialization error handling
-    /// can be done by the change handler.
-    /// If this is None, it means the app file was removed.
-    contents: Option<String>,
+    contents: AppFileContents,
 }
 
 /// Configuration for the platform
@@ -35,10 +52,11 @@ pub struct PlatformOptions {
 
 /// The platform data
 pub struct Platform {
-    base_dir: PathBuf,
     #[cfg(feature = "fs-source")]
     fs_source: fs_source::FsSource,
-    db: Db,
+    change_handler: tokio::task::JoinHandle<()>,
+    /// The database for the platform
+    pub db: Db,
 }
 
 impl Platform {
@@ -53,15 +71,25 @@ impl Platform {
 
         let db = Db::new(&db_url).await.expect("creating database");
 
-        let handler_task =
+        let change_handler =
             tokio::task::spawn(handle_changes::handle_changes(db.clone(), change_rx));
 
         Self {
             #[cfg(feature = "fs-source")]
-            fs_source: fs_source::FsSource::new(base_dir.clone(), change_tx)
-                .expect("creating FsSource"),
+            fs_source: fs_source::FsSource::new(base_dir, change_tx).expect("creating FsSource"),
+            change_handler,
             db,
-            base_dir,
         }
+    }
+
+    /// Wait for everything to settle and then shut down.
+    pub async fn shutdown(self) {
+        let Self {
+            fs_source,
+            change_handler,
+            ..
+        } = self;
+        tokio::task::spawn_blocking(|| fs_source.close()).await.ok();
+        change_handler.await.ok();
     }
 }
