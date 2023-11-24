@@ -53,26 +53,6 @@ pub struct AppDataItem {
     pub updated: chrono::DateTime<chrono::offset::Utc>,
 }
 
-impl AppDataItem {
-    /// Just check that the ID and the updated time of the item are the same.
-    pub fn equal_stateful(&self, other: &AppDataItem) -> bool {
-        self.id == other.id && self.updated == other.updated
-    }
-
-    /// When the code that generated the item was not aware of the previous generated items,
-    /// check all the data fields, except the updated timestamp.
-    pub fn equal_stateless(&self, other: &AppDataItem) -> bool {
-        let data = self.data.as_ref().map(|s| s.get()).unwrap_or("");
-        let other_data = other.data.as_ref().map(|s| s.get()).unwrap_or("");
-        self.id == other.id
-            && self.html == other.html
-            && self.notify == other.notify
-            && self.dismissible == other.dismissible
-            // && self.charts == other.charts
-            && data == other_data
-    }
-}
-
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct AppDataSchedule {

@@ -1,7 +1,11 @@
 use error_stack::{Report, ResultExt};
-use glance_app::Notification;
+use glance_app::{AppData, Notification};
 use itertools::Itertools;
-use sqlx::postgres::PgPool;
+use serde::{Deserialize, Serialize};
+use sqlx::{
+    postgres::{PgConnection, PgPool},
+    Connection, Transaction,
+};
 use sqlx_transparent_json_decode::BoxedRawValue;
 
 use crate::{
@@ -14,17 +18,42 @@ pub struct Db {
     pub(crate) pool: sqlx::PgPool,
 }
 
+#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum EventType {
+    CreateItem,
+    UpdateItem,
+    RemoveItem,
+    RemoveApp,
+    ScheduledRun,
+}
+
 impl Db {
     pub async fn new(database_url: &str) -> Result<Self, Report<Error>> {
         let pool = PgPool::connect(database_url)
             .await
-            .change_context(Error::Db)?;
+            .change_context(Error::DbInit)?;
         sqlx::migrate!()
             .run(&pool)
             .await
-            .change_context(Error::Db)?;
+            .change_context(Error::DbInit)?;
 
         Ok(Self { pool })
+    }
+
+    async fn add_event(
+        &self,
+        tx: &mut PgConnection,
+        event_type: EventType,
+        app_id: &str,
+        item_id: Option<&str>,
+        data: Option<serde_json::Value>,
+    ) -> Result<(), Report<Error>> {
+        sqlx::query_file!("src/add_event.sql", event_type as _, app_id, item_id, data)
+            .execute(tx)
+            .await
+            .change_context(Error::Db)?;
+        Ok(())
     }
 
     pub async fn get_apps(&self, app_ids: &[String]) -> Result<Vec<AppInfo>, Report<Error>> {
@@ -32,6 +61,52 @@ impl Db {
             .fetch_all(&self.pool)
             .await
             .change_context(Error::Db)
+    }
+
+    /// Remove an app and all its associated items.
+    pub async fn remove_app(&self, app_id: &str) -> Result<(), Report<Error>> {
+        sqlx::query_file!("src/remove_app.sql", app_id)
+            .execute(&self.pool)
+            .await
+            .change_context(Error::Db)?;
+
+        Ok(())
+    }
+
+    pub async fn create_or_update_app(&self, app: &AppData) -> Result<(), Report<Error>> {
+        todo!()
+    }
+
+    pub async fn create_or_update_item(
+        &self,
+        tx: &mut PgConnection,
+        item: &Item,
+    ) -> Result<(), Report<Error>> {
+        sqlx::query_file!(
+            "src/create_or_update_item.sql",
+            item.id,
+            item.app_id,
+            item.html,
+            item.data.as_deref() as _,
+            item.dismissible
+        )
+        .execute(tx)
+        .await
+        .change_context(Error::Db)?;
+        Ok(())
+    }
+
+    pub async fn remove_unfound_items(
+        &self,
+        tx: &mut PgConnection,
+        app_id: &str,
+        item_ids: &[String],
+    ) -> Result<(), Report<Error>> {
+        sqlx::query_file!("src/remove_unfound_items.sql", app_id, item_ids)
+            .execute(tx)
+            .await
+            .change_context(Error::Db)?;
+        Ok(())
     }
 
     /// Read all the items for the given app from the database

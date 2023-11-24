@@ -43,11 +43,12 @@ CREATE INDEX ON item_notifications (app_id, item_id);
 CREATE TYPE event_type AS enum (
   'create_item',
   'update_item',
-  'delete_item',
+  'remove_item',
+  'remove_app',
   'scheduled_run'
 );
 
-CREATE TABLE EVENTS (
+CREATE TABLE events (
   id bigint PRIMARY KEY generated always AS identity,
   event_type event_type NOT NULL,
   app_id text NOT NULL,
@@ -56,4 +57,39 @@ CREATE TABLE EVENTS (
   created_at timestamptz NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX ON EVENTS (app_id, created_at DESC);
+CREATE INDEX ON events (app_id, created_at DESC);
+
+CREATE FUNCTION handle_item_trigger() RETURNS TRIGGER
+AS $$
+  BEGIN
+    IF (TG_OP = 'DELETE') THEN
+      INSERT INTO events (event_type, app_id, item_id) VALUES
+        ('remove_item', OLD.app_id, OLD.id);
+    ELSIF (TG_OP = 'UPDATE') THEN
+      INSERT INTO events (event_type, app_id, item_id) VALUES
+        ('update_item', NEW.app_id, NEW.id);
+    ELSIF (TG_OP = 'INSERT') THEN
+      INSERT INTO events (event_type, app_id, item_id) VALUES
+        ('create_item', NEW.app_id, NEW.id);
+    END IF;
+    RETURN NULL;
+  END;
+$$ LANGUAGE plpgsql;
+
+CREATE FUNCTION app_delete_trigger() RETURNS TRIGGER
+AS $$
+  BEGIN
+    INSERT INTO events (event_type, app_id) VALUES ('remove_app', OLD.id);
+    RETURN NULL;
+  END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER item_event_trigger AFTER INSERT OR UPDATE OR DELETE ON items
+  FOR EACH ROW
+  EXECUTE FUNCTION handle_item_trigger();
+
+CREATE TRIGGER app_event_trigger AFTER DELETE ON apps
+  FOR EACH ROW
+  EXECUTE FUNCTION app_delete_trigger();
+
+
