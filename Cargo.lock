@@ -589,6 +589,7 @@ dependencies = [
  "sqlx-transparent-json-decode",
  "thiserror",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use error_stack::{Report, ResultExt};
 use glance_app::AppData;
+use tracing::{event, instrument, Level};
 
 use crate::{db::Db, error::Error, items::Item, AppFileInput};
 
@@ -11,6 +12,7 @@ pub async fn handle_changes(db: Db, change_rx: flume::Receiver<AppFileInput>) {
     }
 }
 
+#[instrument(skip(db, input), fields(app_id = %input.app_id))]
 async fn handle_change_or_error(db: &Db, input: AppFileInput) {
     let AppFileInput { app_id, contents } = input;
 
@@ -19,11 +21,15 @@ async fn handle_change_or_error(db: &Db, input: AppFileInput) {
         None => handle_remove(db, &app_id).await,
     };
 
-    let result = result.attach_printable(app_id);
+    let result = result.attach_printable_lazy(|| app_id.clone());
 
     if let Err(e) = result {
         let err_desc = e.to_string();
-        // TODO set error status for app
+        event!(Level::ERROR,  error = %err_desc , "Error handling app change");
+        let err_result = db.set_app_error(&app_id, &err_desc).await;
+        if let Err(e) = err_result {
+            event!(Level::ERROR,  error = %e , "Failed to record app error");
+        }
     }
 }
 
@@ -37,7 +43,7 @@ async fn handle_change(db: &Db, app_id: &str, contents: &str) -> Result<(), Repo
         .map(|item| (item.id.clone(), item))
         .collect::<HashMap<_, _>>();
 
-    let mut changed_items = app
+    let changed_items = app
         .items
         .iter()
         .filter(|item| {

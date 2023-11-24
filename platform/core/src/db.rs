@@ -7,6 +7,7 @@ use sqlx::{
     Connection, Transaction,
 };
 use sqlx_transparent_json_decode::BoxedRawValue;
+use tracing::{event, instrument, Level};
 
 use crate::{
     error::Error,
@@ -41,6 +42,7 @@ impl Db {
         Ok(Self { pool })
     }
 
+    #[instrument(skip(self))]
     async fn add_event(
         &self,
         tx: &mut PgConnection,
@@ -56,6 +58,20 @@ impl Db {
         Ok(())
     }
 
+    #[instrument(skip(self))]
+    pub async fn set_app_error(&self, app_id: &str, error: &str) -> Result<(), Report<Error>> {
+        sqlx::query!(
+            r##"UPDATE apps SET error = $2 WHERE id = $1"##,
+            app_id,
+            error
+        )
+        .execute(&self.pool)
+        .await
+        .change_context(Error::Db)?;
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
     pub async fn get_apps(&self, app_ids: &[String]) -> Result<Vec<AppInfo>, Report<Error>> {
         sqlx::query_file_as!(AppInfo, "src/get_apps.sql", app_ids)
             .fetch_all(&self.pool)
@@ -64,6 +80,7 @@ impl Db {
     }
 
     /// Remove an app and all its associated items.
+    #[instrument(skip(self))]
     pub async fn remove_app(&self, app_id: &str) -> Result<(), Report<Error>> {
         sqlx::query_file!("src/remove_app.sql", app_id)
             .execute(&self.pool)
@@ -73,10 +90,12 @@ impl Db {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     pub async fn create_or_update_app(&self, app: &AppData) -> Result<(), Report<Error>> {
         todo!()
     }
 
+    #[instrument(skip(self))]
     pub async fn create_or_update_item(
         &self,
         tx: &mut PgConnection,
@@ -87,7 +106,7 @@ impl Db {
             item.id,
             item.app_id,
             item.html,
-            item.data.as_deref() as _,
+            item.data.as_ref().map(|s| s.get()) as _,
             item.dismissible
         )
         .execute(tx)
@@ -96,6 +115,7 @@ impl Db {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     pub async fn remove_unfound_items(
         &self,
         tx: &mut PgConnection,
@@ -110,6 +130,7 @@ impl Db {
     }
 
     /// Read all the items for the given app from the database
+    #[instrument(skip(self))]
     pub async fn read_app_items(&self, app_id: &str) -> Result<Vec<Item>, Report<Error>> {
         let items = sqlx::query_file_as!(Item, "src/get_items_by_app_id.sql", app_id)
             .fetch_all(&self.pool)
@@ -120,6 +141,7 @@ impl Db {
     }
 
     /// Read all the active items for all apps from the database
+    #[instrument(skip(self))]
     pub async fn read_active_items(&self) -> Result<Vec<AppItems>, Report<Error>> {
         let mut items = sqlx::query_file_as!(Item, "src/get_active_items.sql")
             .fetch_all(&self.pool)
