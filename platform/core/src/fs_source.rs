@@ -5,9 +5,11 @@ use std::{
 };
 
 use error_stack::{Report, ResultExt};
-use glance_app::{App, AppData, APP_DATA_SUBDIR};
+use glance_app::APP_DATA_SUBDIR;
 use notify_debouncer_mini::{new_debouncer, notify::RecursiveMode, DebounceEventResult};
 use thiserror::Error;
+
+use crate::AppFileInput;
 
 #[derive(Debug, Error)]
 #[error("Watcher error")]
@@ -22,7 +24,7 @@ pub struct FsSource {
 impl FsSource {
     pub fn new(
         base_dir: PathBuf,
-        change_tx: flume::Sender<(String, AppData)>,
+        change_tx: flume::Sender<AppFileInput>,
     ) -> Result<Self, std::io::Error> {
         let (shutdown_tx, shutdown_rx) = flume::bounded(0);
         let data_dir = base_dir.join(APP_DATA_SUBDIR);
@@ -55,7 +57,7 @@ impl FsSource {
     fn watcher(
         shutdown_rx: flume::Receiver<()>,
         data_dir: PathBuf,
-        change_tx: flume::Sender<(String, AppData)>,
+        change_tx: flume::Sender<AppFileInput>,
     ) -> Result<(), Report<WatcherError>> {
         // Start the watcher
         let watcher_change_tx = change_tx.clone();
@@ -107,23 +109,34 @@ impl FsSource {
     }
 }
 
-fn read_file(path: &Path) -> Result<Option<(String, AppData)>, std::io::Error> {
+fn read_file(path: &Path) -> Result<Option<AppFileInput>, std::io::Error> {
+    if path.extension().unwrap_or_default() != "json" {
+        return Ok(None);
+    }
+
     let Some(app_id) = path.file_stem() else {
         return Ok(None);
     };
 
-    let file = match std::fs::File::open(&path) {
+    let app_id = app_id.to_string_lossy().to_string();
+
+    let data = match std::fs::read_to_string(path) {
         Ok(file) => file,
         Err(e) => {
             if e.kind() == std::io::ErrorKind::NotFound {
-                return Ok(None);
+                // The file was deleted.
+                return Ok(Some(AppFileInput {
+                    app_id,
+                    contents: None,
+                }));
             } else {
                 return Err(e);
             }
         }
     };
 
-    let data: AppData = serde_json::from_reader(&file)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
-    Ok(Some((app_id.to_string_lossy().to_string(), data)))
+    Ok(Some(AppFileInput {
+        app_id,
+        contents: Some(data),
+    }))
 }

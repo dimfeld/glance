@@ -6,6 +6,9 @@ members = [
     "platform/app-rust"
 ]
 
+[workspace.lints.rust]
+missing_docs = "warn"
+
 [profile.release]
 debug = 1
 

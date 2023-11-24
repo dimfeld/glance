@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use sqlx_transparent_json_decode::{sqlx_json_decode, BoxedRawValue};
 
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -33,11 +34,12 @@ pub struct AppDataItem {
 
     /// Whether the item can be dismissed by the viewer
     #[serde(default)]
+    #[cfg_attr(feature = "sqlx", sqlx(default))]
     pub dismissible: bool,
 
     /// Extra structured data for use by chart or other formatters
-    #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
-    pub data: serde_json::Map<String, serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data: Option<BoxedRawValue>,
 
     // /// Charts to display for this item
     // #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -47,7 +49,7 @@ pub struct AppDataItem {
     #[cfg_attr(feature = "sqlx", sqlx(json))]
     pub notify: Vec<Notification>,
 
-    /// Date the item was last updated
+    /// When the item was last updated
     pub updated: chrono::DateTime<chrono::offset::Utc>,
 }
 
@@ -59,13 +61,15 @@ impl AppDataItem {
 
     /// When the code that generated the item was not aware of the previous generated items,
     /// check all the data fields, except the updated timestamp.
-    pub fn equal_stateles(&self, other: &AppDataItem) -> bool {
+    pub fn equal_stateless(&self, other: &AppDataItem) -> bool {
+        let data = self.data.as_ref().map(|s| s.get()).unwrap_or("");
+        let other_data = other.data.as_ref().map(|s| s.get()).unwrap_or("");
         self.id == other.id
-            && self.data == other.data
             && self.html == other.html
-            // && self.charts == other.charts
             && self.notify == other.notify
             && self.dismissible == other.dismissible
+            // && self.charts == other.charts
+            && data == other_data
     }
 }
 
@@ -80,7 +84,11 @@ pub struct AppDataSchedule {
     pub arguments: Vec<String>,
 }
 
+#[cfg(feature = "sqlx")]
+sqlx_json_decode!(AppDataSchedule);
+
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "sql", derive(sqlx::Type))]
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Notification {
     pub id: String,
@@ -88,3 +96,6 @@ pub struct Notification {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
 }
+
+#[cfg(feature = "sqlx")]
+sqlx_json_decode!(Notification);

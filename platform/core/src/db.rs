@@ -1,12 +1,8 @@
-use std::{collections::HashMap, path::Path, rc::Rc};
-
 use error_stack::{Report, ResultExt};
-use glance_app::AppDataItem;
+use glance_app::Notification;
 use itertools::Itertools;
-use sqlx::{
-    postgres::{PgPool, PgPoolOptions},
-    Connection,
-};
+use sqlx::postgres::PgPool;
+use sqlx_transparent_json_decode::BoxedRawValue;
 
 use crate::{
     error::Error,
@@ -15,7 +11,7 @@ use crate::{
 
 #[derive(Clone)]
 pub struct Db {
-    pub pool: sqlx::PgPool,
+    pub(crate) pool: sqlx::PgPool,
 }
 
 impl Db {
@@ -31,10 +27,7 @@ impl Db {
         Ok(Self { pool })
     }
 
-    pub async fn get_apps(
-        &self,
-        app_ids: &[impl AsRef<str>],
-    ) -> Result<Vec<AppInfo>, Report<Error>> {
+    pub async fn get_apps(&self, app_ids: &[String]) -> Result<Vec<AppInfo>, Report<Error>> {
         sqlx::query_file_as!(AppInfo, "src/get_apps.sql", app_ids)
             .fetch_all(&self.pool)
             .await
@@ -53,7 +46,7 @@ impl Db {
 
     /// Read all the active items for all apps from the database
     pub async fn read_active_items(&self) -> Result<Vec<AppItems>, Report<Error>> {
-        let items = sqlx::query_file_as!(Item, "src/get_active_items.sql")
+        let mut items = sqlx::query_file_as!(Item, "src/get_active_items.sql")
             .fetch_all(&self.pool)
             .await
             .change_context(Error::Db)?;
@@ -62,7 +55,7 @@ impl Db {
 
         let mut items_by_app_id = items
             .into_iter()
-            .into_grouping_map_by(|item| item.app_id.as_str())
+            .into_grouping_map_by(|item| item.app_id.to_string())
             .collect::<Vec<_>>();
         let app_ids = items_by_app_id.keys().cloned().collect::<Vec<_>>();
         let apps = self.get_apps(&app_ids).await?;
