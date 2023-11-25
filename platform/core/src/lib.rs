@@ -63,6 +63,7 @@ impl Platform {
     /// Create a new platform
     pub async fn new(config: PlatformOptions) -> Self {
         let base_dir = config.base_dir.unwrap_or_else(App::base_data_dir);
+        std::fs::create_dir_all(&base_dir).expect("creating data directory");
         let (change_tx, change_rx) = flume::bounded(16);
 
         let db_url = config
