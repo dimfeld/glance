@@ -100,9 +100,37 @@ impl Db {
         Ok(())
     }
 
+    /// Update the active state of an item.
     #[instrument(skip(self))]
-    pub async fn create_or_update_app(&self, app: &AppData) -> Result<(), Report<Error>> {
-        todo!()
+    pub async fn set_item_active(
+        &self,
+        app_id: &str,
+        item_id: &str,
+        active: bool,
+    ) -> Result<(), Report<Error>> {
+        sqlx::query!(
+            "UPDATE items SET active = $3 WHERE app_id = $1 AND id = $2",
+            app_id,
+            item_id,
+            active
+        )
+        .execute(&self.pool)
+        .await
+        .change_context(Error::Db)?;
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    pub async fn create_or_update_app(
+        &self,
+        tx: &mut PgConnection,
+        app: &AppData,
+    ) -> Result<(), Report<Error>> {
+        sqlx::query_file!("src/create_or_update_app.sql")
+            .execute(tx)
+            .await?
+            .change_context(Error::Db)?;
+        Ok(())
     }
 
     #[instrument(skip(self))]
