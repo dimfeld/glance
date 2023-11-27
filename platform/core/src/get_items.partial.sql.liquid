@@ -5,15 +5,15 @@ SELECT
   items.data AS "data: BoxedRawValue",
   items.updated_at,
   items.created_at,
-  items.dismissible,
-  items.active,
+  items.persistent,
+  items.dismissed,
   jsonb_agg(jsonb_build_object('id', noti.id, 'html', noti.html, 'icon',
-    noti.icon, 'active', noti.active)) AS "notify: Vec<Notification>"
+    noti.icon, 'dismissed', noti.dismissed)) AS "notify: Vec<Notification>"
 FROM
   items
   LEFT JOIN item_notifications noti ON items.id = noti.item_id
     AND items.app_id = noti.app_id
-    AND noti.active {% if where %}WHERE {{ where }}{% endif %}
+    AND NOT noti.dismissed {% if where %}WHERE {{ where }}{% endif %}
 GROUP BY
   items.id,
   items.app_id

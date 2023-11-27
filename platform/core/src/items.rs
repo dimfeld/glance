@@ -24,13 +24,13 @@ pub struct Item {
     // the query_as macro, so just duplicate the fields here.
     pub id: String,
     pub html: String,
-    pub dismissible: bool,
+    pub persistent: bool,
     pub data: Option<BoxedRawValue>,
     pub notify: Option<Vec<Notification>>,
     pub updated_at: chrono::DateTime<chrono::offset::Utc>,
     pub created_at: chrono::DateTime<chrono::offset::Utc>,
 
-    pub active: bool,
+    pub dismissed: bool,
 }
 
 impl Item {
@@ -39,12 +39,12 @@ impl Item {
             app_id,
             id: item.id,
             html: item.html,
-            dismissible: item.dismissible,
+            persistent: item.persistent,
             data: item.data,
             notify: Some(item.notify),
             updated_at: item.updated,
             created_at: chrono::Utc::now(),
-            active: true,
+            dismissed: false,
         }
     }
 
@@ -67,7 +67,7 @@ impl Item {
         self.id == other.id
             && self.html == other.html
             && notify_match
-            && self.dismissible == other.dismissible
+            && self.persistent == other.persistent
             // && self.charts == other.charts
             && data == other_data
     }

@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use db::Db;
 use glance_app::{App, AppData};
 
+mod api;
 /// Database implementation
 pub mod db;
 /// Define errors

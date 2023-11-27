@@ -3,7 +3,7 @@ INSERT INTO items (
   app_id,
   html,
   data,
-  dismissible)
+  persistent)
 VALUES (
   $1,
   $2,
@@ -16,6 +16,6 @@ ON CONFLICT (
   DO UPDATE SET
     html = EXCLUDED.html,
     data = EXCLUDED.data,
-    dismissible = EXCLUDED.dismissible,
+    persistent = EXCLUDED.persistent,
     updated_at = NOW(),
-    active = TRUE;
+    dismissed = FALSE;

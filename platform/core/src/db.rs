@@ -4,7 +4,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgConnection, PgPool};
 use sqlx_transparent_json_decode::BoxedRawValue;
-use tracing::{event, instrument, Level};
+use tracing::instrument;
 
 use crate::{
     error::Error,
@@ -81,6 +81,7 @@ impl Db {
         Ok(())
     }
 
+    /// List all the known apps
     #[instrument(skip(self))]
     pub async fn get_apps(&self, app_ids: &[String]) -> Result<Vec<AppInfo>, Report<Error>> {
         sqlx::query_file_as!(AppInfo, "src/get_apps.sql", app_ids)
@@ -100,19 +101,19 @@ impl Db {
         Ok(())
     }
 
-    /// Update the active state of an item.
+    /// Update the dismissed state of an item.
     #[instrument(skip(self))]
-    pub async fn set_item_active(
+    pub async fn set_item_dismissed(
         &self,
         app_id: &str,
         item_id: &str,
-        active: bool,
+        dismissed: bool,
     ) -> Result<(), Report<Error>> {
         sqlx::query!(
-            "UPDATE items SET active = $3 WHERE app_id = $1 AND id = $2",
+            "UPDATE items SET dismissed = $3 WHERE app_id = $1 AND id = $2",
             app_id,
             item_id,
-            active
+            dismissed
         )
         .execute(&self.pool)
         .await
@@ -120,19 +121,28 @@ impl Db {
         Ok(())
     }
 
+    /// Update an app, or create it if it doesn't exist.
     #[instrument(skip(self))]
     pub async fn create_or_update_app(
         &self,
         tx: &mut PgConnection,
+        app_id: &str,
         app: &AppData,
     ) -> Result<(), Report<Error>> {
-        sqlx::query_file!("src/create_or_update_app.sql")
-            .execute(tx)
-            .await?
-            .change_context(Error::Db)?;
+        sqlx::query_file!(
+            "src/create_or_update_app.sql",
+            app_id,
+            app.name,
+            app.path,
+            app.stateful
+        )
+        .execute(tx)
+        .await
+        .change_context(Error::Db)?;
         Ok(())
     }
 
+    /// Update an item, or update it if an item with the same ID already exists.
     #[instrument(skip(self))]
     pub async fn create_or_update_item(
         &self,
@@ -145,7 +155,7 @@ impl Db {
             item.app_id,
             item.html,
             item.data.as_ref().map(|s| s.get()) as _,
-            item.dismissible
+            item.persistent
         )
         .execute(tx)
         .await
@@ -153,6 +163,7 @@ impl Db {
         Ok(())
     }
 
+    /// Remove the items with ids that do not match the passed list
     #[instrument(skip(self))]
     pub async fn remove_unfound_items(
         &self,
@@ -160,10 +171,14 @@ impl Db {
         app_id: &str,
         item_ids: &[String],
     ) -> Result<(), Report<Error>> {
-        sqlx::query_file!("src/remove_unfound_items.sql", app_id, item_ids)
-            .execute(tx)
-            .await
-            .change_context(Error::Db)?;
+        sqlx::query!(
+            "DELETE FROM items WHERE app_id = $1 AND id <> ALL($2)",
+            app_id,
+            item_ids
+        )
+        .execute(tx)
+        .await
+        .change_context(Error::Db)?;
         Ok(())
     }
 
@@ -178,7 +193,7 @@ impl Db {
         Ok(items)
     }
 
-    /// Read all the active items for all apps from the database
+    /// Read all the non-dismissed items for all apps from the database
     #[instrument(skip(self))]
     pub async fn read_active_items(&self) -> Result<Vec<AppItems>, Report<Error>> {
         let mut items = sqlx::query_file_as!(Item, "src/get_active_items.sql")

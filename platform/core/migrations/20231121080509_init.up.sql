@@ -22,8 +22,8 @@ CREATE TABLE items (
   charts jsonb,
   created_at timestamptz NOT NULL DEFAULT NOW(),
   updated_at timestamptz NOT NULL,
-  dismissible boolean NOT NULL DEFAULT FALSE,
-  active boolean NOT NULL DEFAULT TRUE,
+  persistent boolean NOT NULL DEFAULT FALSE,
+  dismissed boolean NOT NULL DEFAULT FALSE,
   PRIMARY KEY (id, app_id)
 );
 
@@ -35,7 +35,7 @@ CREATE TABLE item_notifications (
   app_id text REFERENCES apps (id) ON DELETE CASCADE,
   html text NOT NULL,
   icon text,
-  active boolean NOT NULL DEFAULT TRUE,
+  dismissed boolean NOT NULL DEFAULT FALSE,
   FOREIGN KEY (item_id, app_id) REFERENCES items (id, app_id) ON DELETE CASCADE
 );
 
