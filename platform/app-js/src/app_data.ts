@@ -32,10 +32,6 @@ export interface AppDataItem {
     [k: string]: unknown;
   };
   /**
-   * Whether the item can be dismissed by the viewer
-   */
-  dismissible?: boolean;
-  /**
    * HTML to display for the item's label
    */
   html: string;
@@ -45,7 +41,11 @@ export interface AppDataItem {
    */
   notify?: Notification[];
   /**
-   * Date the item was last updated
+   * Whether the item can be dismissed by the viewer
+   */
+  persistent?: boolean;
+  /**
+   * When the item was last updated
    */
   updated: string;
 }

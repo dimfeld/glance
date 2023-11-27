@@ -69,7 +69,7 @@ impl Platform {
 
         let db_url = config
             .database_url
-            .unwrap_or_else(|| std::env::var("DATABASE_URL").unwrap_or_default());
+            .unwrap_or_else(|| std::env::var("GLANCE_DATABASE_URL").unwrap_or_default());
 
         let db = Db::new(&db_url).await.expect("creating database");
 

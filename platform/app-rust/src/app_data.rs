@@ -23,6 +23,10 @@ pub struct AppData {
     pub stateful: bool,
 }
 
+fn bool_true() -> bool {
+    true
+}
+
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -33,12 +37,12 @@ pub struct AppDataItem {
     pub html: String,
 
     /// Whether the item can be dismissed by the viewer
-    #[serde(default)]
+    #[serde(default = "bool_true")]
     #[cfg_attr(feature = "sqlx", sqlx(default))]
-    pub dismissible: bool,
+    pub persistent: bool,
 
     /// Extra structured data for use by chart or other formatters
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub data: Option<BoxedRawValue>,
 
     // /// Charts to display for this item

@@ -1,8 +1,9 @@
 use glance_app::{AppDataItem, Notification};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use sqlx_transparent_json_decode::BoxedRawValue;
 
+#[derive(Debug, Serialize)]
 pub struct AppInfo {
     pub id: String,
     pub name: String,
@@ -10,13 +11,14 @@ pub struct AppInfo {
     pub stateful: bool,
 }
 
+#[derive(Debug, Serialize)]
 pub struct AppItems {
     pub app: AppInfo,
     pub items: Vec<Item>,
 }
 
 /// An Item as stored in the database
-#[derive(Debug, Deserialize, FromRow)]
+#[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Item {
     pub app_id: String,
 

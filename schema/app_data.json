@@ -45,13 +45,7 @@
       "properties": {
         "data": {
           "description": "Extra structured data for use by chart or other formatters",
-          "type": "object",
-          "additionalProperties": true
-        },
-        "dismissible": {
-          "description": "Whether the item can be dismissed by the viewer",
-          "default": false,
-          "type": "boolean"
+          "default": null
         },
         "html": {
           "description": "HTML to display for the item's label",
@@ -67,8 +61,13 @@
             "$ref": "#/definitions/Notification"
           }
         },
+        "persistent": {
+          "description": "Whether the item can be dismissed by the viewer",
+          "default": true,
+          "type": "boolean"
+        },
         "updated": {
-          "description": "Date the item was last updated",
+          "description": "When the item was last updated",
           "type": "string",
           "format": "date-time"
         }
