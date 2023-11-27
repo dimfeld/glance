@@ -6,6 +6,7 @@ use error_stack::{Report, ResultExt};
 use glance_core::{error::Error, tracing_config, Platform, PlatformOptions};
 
 #[derive(Parser)]
+#[command(version, about)]
 struct Cli {
     #[clap(subcommand)]
     command: Command,
@@ -68,6 +69,8 @@ async fn serve(cmd: ServeCommand) -> Result<(), Report<Error>> {
 /// The entrypoint
 #[tokio::main]
 pub async fn main() -> Result<(), Report<Error>> {
+    dotenvy::dotenv().ok();
+
     let cli = Cli::parse();
     match cli.command {
         Command::Serve(cmd) => serve(cmd).await,

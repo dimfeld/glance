@@ -21,7 +21,7 @@ CREATE TABLE items (
   data jsonb,
   charts jsonb,
   created_at timestamptz NOT NULL DEFAULT NOW(),
-  updated_at timestamptz NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT NOW(),
   persistent boolean NOT NULL DEFAULT FALSE,
   dismissed boolean NOT NULL DEFAULT FALSE,
   PRIMARY KEY (id, app_id)

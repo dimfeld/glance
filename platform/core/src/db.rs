@@ -154,7 +154,7 @@ impl Db {
             item.id,
             item.app_id,
             item.html,
-            item.data.as_ref().map(|s| s.get()) as _,
+            item.data as _,
             item.persistent
         )
         .execute(tx)

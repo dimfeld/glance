@@ -22,14 +22,14 @@ async fn handle_change_or_error(db: &Db, input: AppFileInput) {
         AppFileContents::Empty => handle_remove(db, &app_id).await,
     };
 
-    let result = result.attach_printable_lazy(|| app_id.clone());
+    let result = result.attach_printable_lazy(|| format!("App ID: {}", app_id));
 
     if let Err(e) = result {
-        let err_desc = e.to_string();
+        let err_desc = format!("{e:?}");
         event!(Level::ERROR,  error = %err_desc , "Error handling app change");
         let err_result = db.update_app_status(&app_id, Some(&err_desc)).await;
         if let Err(e) = err_result {
-            event!(Level::ERROR,  error = %e , "Failed to record app error");
+            event!(Level::ERROR,  error = ?e , "Failed to record app error");
         }
     }
 }
@@ -64,6 +64,8 @@ async fn handle_change(db: &Db, app_id: &str, app: &AppData) -> Result<(), Repor
         .map(|item| Item::from_app_item(app_id.to_string(), item.clone()));
 
     let mut tx = db.pool.begin().await.change_context(Error::Db)?;
+
+    db.create_or_update_app(tx.as_mut(), app_id, app).await?;
 
     let mut changed_ids = Vec::new();
     for item in changed_items {

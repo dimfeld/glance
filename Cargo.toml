@@ -6,6 +6,9 @@ members = [
     "platform/app-rust"
 ]
 
+# [patch.crates-io]
+# sqlx-transparent-json-decode = { path = "../sqlx-transparent-json-decode", features = ["schemars", "serde"] }
+
 [workspace.lints.rust]
 missing_docs = "warn"
 
