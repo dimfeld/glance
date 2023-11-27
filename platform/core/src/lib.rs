@@ -5,6 +5,7 @@ use std::path::PathBuf;
 
 use db::Db;
 use glance_app::{App, AppData};
+use tracing::{event, Level};
 
 /// Database implementation
 pub mod db;
@@ -94,7 +95,10 @@ impl Platform {
             change_handler,
             ..
         } = self;
+        event!(Level::DEBUG, "Shutting down fs source");
+        #[cfg(feature = "fs-source")]
         tokio::task::spawn_blocking(|| fs_source.close()).await.ok();
+        event!(Level::DEBUG, "Shutting down change handler");
         change_handler.await.ok();
     }
 }

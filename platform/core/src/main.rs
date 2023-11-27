@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand};
 use error_stack::{Report, ResultExt};
 use glance_core::{error::Error, tracing_config, Platform, PlatformOptions};
+use tracing::{event, Level};
 
 #[derive(Parser)]
 #[command(version, about)]
@@ -55,13 +56,16 @@ async fn serve(cmd: ServeCommand) -> Result<(), Report<Error>> {
     .await?;
 
     server.run().await?;
+    event!(Level::DEBUG, "Server shut down");
 
     platform.shutdown().await;
+    event!(Level::DEBUG, "Platform shut down");
 
     // Wait for all the remaining traces to export
     tokio::task::spawn_blocking(|| glance_core::tracing_config::teardown())
         .await
         .change_context(Error::Shutdown)?;
+    event!(Level::DEBUG, "Trace shut down");
 
     Ok(())
 }

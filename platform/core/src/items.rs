@@ -2,6 +2,7 @@ use glance_app::{AppDataItem, Notification};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use sqlx_transparent_json_decode::BoxedRawValue;
+use tracing::instrument;
 
 #[derive(Debug, Serialize)]
 pub struct AppInfo {
@@ -51,12 +52,14 @@ impl Item {
     }
 
     /// Just check that the ID and the updated time of the item are the same.
+    #[instrument(level = "trace")]
     pub fn equal_stateful(&self, other: &AppDataItem) -> bool {
         self.id == other.id && self.updated_at == other.updated
     }
 
     /// When the code that generated the item was not aware of the previous generated items,
     /// check all the data fields, except the updated timestamp.
+    #[instrument(level = "trace")]
     pub fn equal_stateless(&self, other: &AppDataItem) -> bool {
         let data = self.data.as_ref().map(|s| s.get()).unwrap_or("");
         let other_data = other.data.as_ref().map(|s| s.get()).unwrap_or("");

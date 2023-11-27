@@ -3,13 +3,15 @@ INSERT INTO items (
   app_id,
   html,
   data,
-  persistent)
+  persistent,
+  updated_at)
 VALUES (
   $1,
   $2,
   $3,
   $4,
-  $5)
+  $5,
+  $6)
 ON CONFLICT (
   app_id,
   id)

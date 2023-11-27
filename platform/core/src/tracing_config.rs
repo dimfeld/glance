@@ -5,7 +5,7 @@ use tonic::metadata::{Ascii, MetadataValue};
 use tracing::subscriber::set_global_default;
 use tracing_error::ErrorLayer;
 use tracing_log::LogTracer;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
+use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 use tracing_tree::HierarchicalLayer;
 
 /// Configuration for sending telemetry to Honeycomb

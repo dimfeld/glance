@@ -2,7 +2,10 @@ use error_stack::{Report, ResultExt};
 use glance_app::{AppData, Notification};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use sqlx::postgres::{PgConnection, PgPool};
+use sqlx::{
+    postgres::{PgConnection, PgPool},
+    PgExecutor,
+};
 use sqlx_transparent_json_decode::BoxedRawValue;
 use tracing::instrument;
 
@@ -14,7 +17,8 @@ use crate::{
 /// The database for the glance platform
 #[derive(Clone)]
 pub struct Db {
-    pub(crate) pool: sqlx::PgPool,
+    /// The database connection pool
+    pub pool: sqlx::PgPool,
 }
 
 /// Event types that can be recorded
@@ -67,6 +71,7 @@ impl Db {
     #[instrument(skip(self))]
     pub async fn update_app_status(
         &self,
+        conn: impl PgExecutor<'_>,
         app_id: &str,
         error: Option<&str>,
     ) -> Result<(), Report<Error>> {
@@ -75,7 +80,7 @@ impl Db {
             app_id,
             error
         )
-        .execute(&self.pool)
+        .execute(conn)
         .await
         .change_context(Error::Db)?;
         Ok(())
@@ -125,7 +130,7 @@ impl Db {
     #[instrument(skip(self))]
     pub async fn create_or_update_app(
         &self,
-        tx: &mut PgConnection,
+        tx: impl PgExecutor<'_>,
         app_id: &str,
         app: &AppData,
     ) -> Result<(), Report<Error>> {
@@ -146,7 +151,7 @@ impl Db {
     #[instrument(skip(self))]
     pub async fn create_or_update_item(
         &self,
-        tx: &mut PgConnection,
+        tx: impl PgExecutor<'_>,
         item: &Item,
     ) -> Result<(), Report<Error>> {
         sqlx::query_file!(
@@ -155,7 +160,8 @@ impl Db {
             item.app_id,
             item.html,
             item.data as _,
-            item.persistent
+            item.persistent,
+            item.updated_at
         )
         .execute(tx)
         .await

@@ -27,7 +27,9 @@ async fn handle_change_or_error(db: &Db, input: AppFileInput) {
     if let Err(e) = result {
         let err_desc = format!("{e:?}");
         event!(Level::ERROR,  error = %err_desc , "Error handling app change");
-        let err_result = db.update_app_status(&app_id, Some(&err_desc)).await;
+        let err_result = db
+            .update_app_status(&db.pool, &app_id, Some(&err_desc))
+            .await;
         if let Err(e) = err_result {
             event!(Level::ERROR,  error = ?e , "Failed to record app error");
         }
@@ -75,8 +77,6 @@ async fn handle_change(db: &Db, app_id: &str, app: &AppData) -> Result<(), Repor
 
     db.remove_unfound_items(tx.as_mut(), app_id, &changed_ids)
         .await?;
-
-    db.update_app_status(app_id, None).await?;
 
     tx.commit().await.change_context(Error::Db)?;
 

@@ -14,4 +14,5 @@ ON CONFLICT (
     name = EXCLUDED.name,
     path = EXCLUDED.path,
     stateful = EXCLUDED.stateful,
-    updated_at = NOW();
+    updated_at = NOW(),
+    error = NULL;
