@@ -1,14 +1,11 @@
-use std::borrow::Cow;
-
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use error_stack::Report;
-use serde::Serialize;
 use thiserror::Error;
-use tracing::{event, Level};
+
+use crate::server::error::HttpError;
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -27,8 +24,14 @@ pub enum Error {
     WrapReport(Report<Error>),
 }
 
-impl Error {
-    pub fn error_kind(&self) -> &'static str {
+impl From<Report<Error>> for Error {
+    fn from(value: Report<Error>) -> Self {
+        Error::WrapReport(value)
+    }
+}
+
+impl crate::server::error::HttpError for Error {
+    fn error_kind(&self) -> &'static str {
         match self {
             Error::DbInit => "db_init",
             Error::Db => "db",
@@ -49,53 +52,10 @@ impl Error {
             Error::WrapReport(e) => e.current_context().status_code(),
         }
     }
-
-    pub fn response_tuple(&self) -> (StatusCode, ErrorResponseData) {
-        (
-            self.status_code(),
-            ErrorResponseData::new(self.error_kind(), self.to_string()),
-        )
-    }
-}
-
-impl From<Report<Error>> for Error {
-    fn from(value: Report<Error>) -> Self {
-        todo!()
-    }
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        let (code, json) = self.response_tuple();
-        (code, Json(json)).into_response()
-    }
-}
-
-#[derive(Debug, Serialize)]
-pub struct ErrorResponseData {
-    error: ErrorDetails,
-}
-
-#[derive(Debug, Serialize)]
-struct ErrorDetails {
-    kind: Cow<'static, str>,
-    message: Cow<'static, str>,
-}
-
-impl ErrorResponseData {
-    pub fn new(
-        kind: impl Into<Cow<'static, str>>,
-        message: impl Into<Cow<'static, str>>,
-    ) -> ErrorResponseData {
-        let ret = ErrorResponseData {
-            error: ErrorDetails {
-                kind: kind.into(),
-                message: message.into(),
-            },
-        };
-
-        event!(Level::ERROR, kind=%ret.error.kind, message=%ret.error.message);
-
-        ret
+        self.to_response()
     }
 }

@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use db::Db;
 use glance_app::{App, AppData};
 
-mod api;
 /// Database implementation
 pub mod db;
 /// Define errors
@@ -15,6 +14,8 @@ pub mod error;
 mod fs_source;
 mod handle_changes;
 mod items;
+pub mod server;
+mod tracing_config;
 
 /// An app data update
 pub enum AppFileContents {
