@@ -24,18 +24,25 @@ use tracing::{event, Level};
 
 use crate::{db::Db, error::Error};
 
-pub(super) struct InnerState {
+/// Shared state used by the server
+pub struct InnerState {
+    /// If the app is running in production mode. This should be used sparingly as there should be
+    /// a minimum of difference between production and development.
     production: bool,
     db: Db,
-    // TODO add relevant state here
 }
 
 pub(super) type ServerState = Arc<InnerState>;
 
+/// The server and related information
 pub struct Server {
+    /// The host the server is bound to
     pub host: String,
+    /// The port the server is bound to
     pub port: u16,
+    /// The server. Await this to actually start running.
     pub server: axum::Server<AddrIncoming, IntoMakeService<Router>>,
+    /// The server state.
     pub state: Arc<InnerState>,
 }
 
@@ -54,6 +61,7 @@ impl Server {
         self.run_with_shutdown_signal(shutdown_rx).await
     }
 
+    /// Run the server, and shut it down when `shutdown_rx` closes.
     pub async fn run_with_shutdown_signal<T>(
         self,
         shutdown_rx: impl Future<Output = T> + Send + 'static,
@@ -63,8 +71,6 @@ impl Server {
         tokio::task::spawn(async move {
             shutdown_rx.await;
             internal_shutdown_tx.send(()).ok();
-
-            // event!(Level::INFO, "Shutting down background jobs");
         });
 
         self.server
@@ -73,24 +79,33 @@ impl Server {
                 event!(Level::INFO, "Shutting down server");
             })
             .await
-            .change_context(Error::Server)?;
-
-        // Can do extra shutdown tasks here.
+            .change_context(Error::ServerStart)?;
 
         Ok(())
     }
 }
 
+/// Configuration for the server
 pub struct Config<'a> {
-    env: &'a str,
-    host: String,
-    port: u16,
+    /// The environment we're running in. Currently this just distinguishes between
+    /// "development" and any other value.
+    pub env: &'a str,
+    /// The host to bind to.
+    pub host: String,
+    /// The port to bind to
+    pub port: u16,
+    /// The database from the Platform
+    pub db: Db,
 }
 
-pub async fn create_server(config: Config<'_>, db: Db) -> Result<Server, Report<Error>> {
+/// Create the server and return it, ready to run.
+pub async fn create_server(config: Config<'_>) -> Result<Server, Report<Error>> {
     let production = config.env != "development" && !cfg!(debug_assertions);
 
-    let state = Arc::new(InnerState { production, db });
+    let state = Arc::new(InnerState {
+        production,
+        db: config.db,
+    });
 
     let app: Router<ServerState> = Router::new().merge(routes::items::routes()).layer(
         ServiceBuilder::new()
@@ -119,7 +134,7 @@ pub async fn create_server(config: Config<'_>, db: Db) -> Result<Server, Report<
     let bind_ip = config
         .host
         .parse::<IpAddr>()
-        .change_context(Error::Server)?;
+        .change_context(Error::ServerStart)?;
     let bind_addr = SocketAddr::from((bind_ip, config.port));
     let builder = axum::Server::bind(&bind_addr);
 

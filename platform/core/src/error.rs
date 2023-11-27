@@ -5,18 +5,27 @@ use axum::{
 use error_stack::Report;
 use thiserror::Error;
 
-use crate::server::error::HttpError;
+use crate::{server::error::HttpError, tracing_config};
 
+/// The top-level error type from the platform
 #[derive(Debug, Error)]
 pub enum Error {
+    /// Failed to intialize database
     #[error("Failed to intialize database")]
     DbInit,
+    /// Database error not otherwise handled
     #[error("Database error")]
     Db,
+    /// Failure deserializing an app data file
     #[error("Failed to read app data")]
     ReadAppData,
+    /// Failed to start the HTTP server
     #[error("Failed to start server")]
-    Server,
+    ServerStart,
+    /// Failure while shutting down
+    #[error("Encountered error while shutting down")]
+    Shutdown,
+    /// The requested item was not found
     #[error("{0} not found")]
     NotFound(&'static str),
     /// A wrapper around a Report<Error> to let it be returned from an Axum handler
@@ -33,23 +42,25 @@ impl From<Report<Error>> for Error {
 impl crate::server::error::HttpError for Error {
     fn error_kind(&self) -> &'static str {
         match self {
+            Error::WrapReport(e) => e.current_context().error_kind(),
             Error::DbInit => "db_init",
             Error::Db => "db",
             Error::ReadAppData => "read_app_data",
-            Error::Server => "server",
+            Error::ServerStart => "server",
             Error::NotFound(_) => "not_found",
-            Error::WrapReport(e) => e.current_context().error_kind(),
+            Error::Shutdown => "shutdown",
         }
     }
 
     fn status_code(&self) -> StatusCode {
         match self {
+            Error::WrapReport(e) => e.current_context().status_code(),
             Error::DbInit => StatusCode::INTERNAL_SERVER_ERROR,
             Error::Db => StatusCode::INTERNAL_SERVER_ERROR,
             Error::ReadAppData => StatusCode::BAD_REQUEST,
-            Error::Server => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::ServerStart => StatusCode::INTERNAL_SERVER_ERROR,
             Error::NotFound(_) => StatusCode::NOT_FOUND,
-            Error::WrapReport(e) => e.current_context().status_code(),
+            Error::Shutdown => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

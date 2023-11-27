@@ -14,8 +14,10 @@ pub mod error;
 mod fs_source;
 mod handle_changes;
 mod items;
+/// The HTTP server
 pub mod server;
-mod tracing_config;
+/// Tracing setup
+pub mod tracing_config;
 
 /// An app data update
 pub enum AppFileContents {

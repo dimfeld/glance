@@ -8,26 +8,38 @@ use tracing_log::LogTracer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
 use tracing_tree::HierarchicalLayer;
 
+/// Configuration for sending telemetry to Honeycomb
 pub struct HoneycombConfig {
+    /// The Honeycomb team to export to
     pub team: String,
+    /// The Honeycomb dataset to export to. This is also used as the service name
     pub dataset: String,
 }
 
+/// Configuration for sending telemetry to Jaeger
 pub struct JaegerConfig {
+    /// The Jaeger service name
     pub service_name: String,
+    /// The Jaeger endpoint to send tracing to
     pub endpoint: String,
 }
 
+/// Configuration to define how to export telemetry
 pub enum TracingExportConfig {
+    /// Do not export tracing to an external service. This still prints it to the console.
     None,
+    /// Export traces to Honeycomb
     Honeycomb(HoneycombConfig),
+    /// Export traces to Jaeger
     Jaeger(JaegerConfig),
 }
 
+/// The error returned when tracing setup fails
 #[derive(Error, Debug)]
 #[error("Failed to configure tracing")]
 pub struct TraceConfigureError;
 
+/// Configure and enable tracing, potentially with export to an external service.
 pub fn configure(export_config: TracingExportConfig) -> Result<(), Report<TraceConfigureError>> {
     LogTracer::builder()
         .ignore_crate("rustls")
@@ -96,6 +108,7 @@ pub fn configure(export_config: TracingExportConfig) -> Result<(), Report<TraceC
     Ok(())
 }
 
+/// Shut down the active tracing exporter
 pub fn teardown() {
     opentelemetry::global::shutdown_tracer_provider();
 }
