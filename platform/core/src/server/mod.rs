@@ -1,4 +1,3 @@
-#[macro_use]
 pub mod error;
 mod obfuscate_errors;
 mod panic_handler;
