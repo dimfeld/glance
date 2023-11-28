@@ -3,14 +3,13 @@
 SELECT
   items.id,
   items.app_id,
-  items.html,
-  items.data AS "data: BoxedRawValue",
+  items.data AS "data: AppItemData",
   items.updated_at,
   items.created_at,
   items.persistent,
   items.dismissed,
-  array_agg(jsonb_build_object('id', noti.id, 'html', noti.html, 'icon',
-    noti.icon, 'dismissed', noti.dismissed)) FILTER (WHERE noti.id IS NOT NULL) AS "notify: Vec<Notification>"
+  array_agg(jsonb_build_object('id', noti.id, 'data', noti.data, 'dismissed',
+    noti.dismissed)) FILTER (WHERE noti.id IS NOT NULL) AS "notify: Vec<Notification>"
 FROM
   items
   LEFT JOIN item_notifications noti ON items.id = noti.item_id

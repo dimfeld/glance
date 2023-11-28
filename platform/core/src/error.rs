@@ -5,7 +5,7 @@ use axum::{
 use error_stack::Report;
 use thiserror::Error;
 
-use crate::{server::error::HttpError, tracing_config};
+use crate::server::error::HttpError;
 
 /// The top-level error type from the platform
 #[derive(Debug, Error)]

@@ -5,8 +5,14 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
+/**
+ * The top-level data for the app
+ */
 export interface AppData {
-  items?: AppDataItem[];
+  /**
+   * An array of data items that the app is publishing
+   */
+  items?: AppItem[];
   /**
    * The name of the app
    */
@@ -18,23 +24,27 @@ export interface AppData {
   /**
    * Request that the platform run the app at the specified schedule, if it does not have its own methods of scheduling updates
    */
-  schedule?: AppDataSchedule[];
+  schedule?: AppSchedule[];
   /**
    * If false, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write If true, the app can just check the updated timestamp to see if an item has changed
    */
   stateful?: boolean;
+  /**
+   * Information only used to render the UI of the app
+   */
+  ui?: AppUiInfo | null;
 }
-export interface AppDataItem {
+/**
+ * An item published by the app
+ */
+export interface AppItem {
   /**
-   * Extra structured data for use by chart or other formatters
+   * Display information for the item
    */
-  data?: {
-    [k: string]: unknown;
-  };
+  data: AppItemData;
   /**
-   * HTML to display for the item's label
+   * An ID that uniquely identifies this item among others published by the app
    */
-  html: string;
   id: string;
   /**
    * Notifications for this item
@@ -49,12 +59,67 @@ export interface AppDataItem {
    */
   updated: string;
 }
-export interface Notification {
-  html: string;
+/**
+ * Information for an app item
+ */
+export interface AppItemData {
+  /**
+   * Extra structured data for use by chart or other formatters
+   */
+  data?: {
+    [k: string]: unknown;
+  };
+  /**
+   * Extra information which can be shown
+   */
+  detail?: string | null;
+  /**
+   * An icon to show with this item
+   */
   icon?: string | null;
+  /**
+   * A subtitle to display below the title
+   */
+  subtitle?: string | null;
+  /**
+   * The title at the top of the card
+   */
+  title: string;
+}
+/**
+ * A notification from the app
+ */
+export interface Notification {
+  /**
+   * Data for the notification
+   */
+  data: NotificationData;
+  /**
+   * A unique ID among other notifications for this app
+   */
   id: string;
 }
-export interface AppDataSchedule {
+/**
+ * Data for a notification
+ */
+export interface NotificationData {
+  /**
+   * An icon to show with the notification
+   */
+  icon?: string | null;
+  /**
+   * A subtitle to display below the title
+   */
+  subtitle?: string | null;
+  /**
+   * The title at the top of the card
+   */
+  title: string;
+}
+/**
+ * A schedule on which to run this app. This is not implemented yet.
+ */
+export interface AppSchedule {
   /**
    * Arguments to pass to the app
    */
@@ -63,4 +128,13 @@ export interface AppDataSchedule {
    * The cron schedule for the app
    */
   cron: string;
+}
+/**
+ * Information only used to render the UI of the app
+ */
+export interface AppUiInfo {
+  /**
+   * The icon that the app should show (exact format TBD)
+   */
+  icon?: string | null;
 }

@@ -3,6 +3,7 @@ CREATE TABLE apps (
   name text NOT NULL,
   path text NOT NULL,
   stateful boolean NOT NULL DEFAULT FALSE,
+  ui jsonb NOT NULL DEFAULT '{}' ::jsonb,
   updated_at timestamptz NOT NULL DEFAULT NOW(),
   error text
 );
@@ -17,9 +18,7 @@ CREATE TABLE schedules (
 CREATE TABLE items (
   id text,
   app_id text REFERENCES apps (id) ON DELETE CASCADE,
-  html text NOT NULL,
-  data jsonb,
-  charts jsonb,
+  data jsonb NOT NULL,
   created_at timestamptz NOT NULL DEFAULT NOW(),
   updated_at timestamptz NOT NULL DEFAULT NOW(),
   persistent boolean NOT NULL DEFAULT FALSE,
@@ -33,8 +32,7 @@ CREATE TABLE item_notifications (
   id text PRIMARY KEY,
   item_id text,
   app_id text REFERENCES apps (id) ON DELETE CASCADE,
-  html text NOT NULL,
-  icon text,
+  data jsonb NOT NULL,
   dismissed boolean NOT NULL DEFAULT FALSE,
   FOREIGN KEY (item_id, app_id) REFERENCES items (id, app_id) ON DELETE CASCADE
 );

@@ -1,12 +1,11 @@
 use error_stack::{Report, ResultExt};
-use glance_app::{AppData, Notification};
+use glance_app::{AppData, AppItemData, Notification};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use sqlx::{
     postgres::{PgConnection, PgPool},
     PgExecutor,
 };
-use sqlx_transparent_json_decode::BoxedRawValue;
 use tracing::instrument;
 
 use crate::{
@@ -139,7 +138,8 @@ impl Db {
             app_id,
             app.name,
             app.path,
-            app.stateful
+            app.stateful,
+            sqlx::types::Json(&app.ui) as _
         )
         .execute(tx)
         .await
@@ -158,8 +158,7 @@ impl Db {
             "src/create_or_update_item.sql",
             item.id,
             item.app_id,
-            item.html,
-            item.data as _,
+            sqlx::types::Json(&item.data) as _,
             item.persistent,
             item.updated_at
         )

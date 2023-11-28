@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "AppData",
+  "description": "The top-level data for the app",
   "type": "object",
   "required": [
     "name",
@@ -8,9 +9,10 @@
   ],
   "properties": {
     "items": {
+      "description": "An array of data items that the app is publishing",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/AppDataItem"
+        "$ref": "#/definitions/AppItem"
       }
     },
     "name": {
@@ -25,33 +27,46 @@
       "description": "Request that the platform run the app at the specified schedule, if it does not have its own methods of scheduling updates",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/AppDataSchedule"
+        "$ref": "#/definitions/AppSchedule"
       }
     },
     "stateful": {
       "description": "If false, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write If true, the app can just check the updated timestamp to see if an item has changed",
       "default": false,
       "type": "boolean"
+    },
+    "ui": {
+      "description": "Information only used to render the UI of the app",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/AppUiInfo"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "definitions": {
-    "AppDataItem": {
+    "AppItem": {
+      "description": "An item published by the app",
       "type": "object",
       "required": [
-        "html",
+        "data",
         "id",
         "updated"
       ],
       "properties": {
         "data": {
-          "description": "Extra structured data for use by chart or other formatters",
-          "default": null
-        },
-        "html": {
-          "description": "HTML to display for the item's label",
-          "type": "string"
+          "description": "Display information for the item",
+          "allOf": [
+            {
+              "$ref": "#/definitions/AppItemData"
+            }
+          ]
         },
         "id": {
+          "description": "An ID that uniquely identifies this item among others published by the app",
           "type": "string"
         },
         "notify": {
@@ -73,7 +88,45 @@
         }
       }
     },
-    "AppDataSchedule": {
+    "AppItemData": {
+      "description": "Information for an app item",
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "data": {
+          "description": "Extra structured data for use by chart or other formatters"
+        },
+        "detail": {
+          "description": "Extra information which can be shown",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "icon": {
+          "description": "An icon to show with this item",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subtitle": {
+          "description": "A subtitle to display below the title",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "title": {
+          "description": "The title at the top of the card",
+          "type": "string"
+        }
+      }
+    },
+    "AppSchedule": {
+      "description": "A schedule on which to run this app. This is not implemented yet.",
       "type": "object",
       "required": [
         "cron"
@@ -92,23 +145,64 @@
         }
       }
     },
+    "AppUiInfo": {
+      "description": "Information only used to render the UI of the app",
+      "type": "object",
+      "properties": {
+        "icon": {
+          "description": "The icon that the app should show (exact format TBD)",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
     "Notification": {
+      "description": "A notification from the app",
       "type": "object",
       "required": [
-        "html",
+        "data",
         "id"
       ],
       "properties": {
-        "html": {
-          "type": "string"
+        "data": {
+          "description": "Data for the notification",
+          "allOf": [
+            {
+              "$ref": "#/definitions/NotificationData"
+            }
+          ]
         },
+        "id": {
+          "description": "A unique ID among other notifications for this app",
+          "type": "string"
+        }
+      }
+    },
+    "NotificationData": {
+      "description": "Data for a notification",
+      "type": "object",
+      "required": [
+        "title"
+      ],
+      "properties": {
         "icon": {
+          "description": "An icon to show with the notification",
           "type": [
             "string",
             "null"
           ]
         },
-        "id": {
+        "subtitle": {
+          "description": "A subtitle to display below the title",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "title": {
+          "description": "The title at the top of the card",
           "type": "string"
         }
       }

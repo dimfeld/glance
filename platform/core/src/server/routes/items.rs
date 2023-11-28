@@ -1,14 +1,9 @@
-use axum::{
-    extract::{Path, State},
-    response::IntoResponse,
-    routing::{get, post},
-    Json, Router,
-};
+use axum::{extract::State, response::IntoResponse, routing::get, Json, Router};
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
 use super::ServerState;
-use crate::{db::Db, error::Error, server::error::HttpError};
+use crate::error::Error;
 
 async fn get_active_items(State(state): State<ServerState>) -> Result<impl IntoResponse, Error> {
     let items = state.db.read_active_items().await?;
