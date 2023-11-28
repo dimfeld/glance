@@ -18,7 +18,7 @@ async fn handle_change_or_error(db: &Db, input: AppFileInput) {
 
     let result = match contents {
         AppFileContents::Raw(contents) => handle_raw_data(db, &app_id, &contents).await,
-        AppFileContents::Parsed(data) => handle_change(db, &app_id, &data).await,
+        AppFileContents::Parsed(data) => handle_change(db, &app_id, *data).await,
         AppFileContents::Empty => handle_remove(db, &app_id).await,
     };
 
@@ -38,10 +38,10 @@ async fn handle_change_or_error(db: &Db, input: AppFileInput) {
 
 async fn handle_raw_data(db: &Db, app_id: &str, contents: &str) -> Result<(), Report<Error>> {
     let data = serde_json::from_str::<AppData>(contents).change_context(Error::ReadAppData)?;
-    handle_change(db, app_id, &data).await
+    handle_change(db, app_id, data).await
 }
 
-async fn handle_change(db: &Db, app_id: &str, app: &AppData) -> Result<(), Report<Error>> {
+async fn handle_change(db: &Db, app_id: &str, mut app: AppData) -> Result<(), Report<Error>> {
     let current_items = db
         .read_app_items(app_id)
         .await?
@@ -49,9 +49,15 @@ async fn handle_change(db: &Db, app_id: &str, app: &AppData) -> Result<(), Repor
         .map(|item| (item.id.clone(), item))
         .collect::<HashMap<_, _>>();
 
-    let changed_items = app
+    let item_ids = app
         .items
         .iter()
+        .map(|item| item.id.clone())
+        .collect::<Vec<_>>();
+
+    let items = std::mem::replace(&mut app.items, vec![]);
+    let changed_items = items
+        .into_iter()
         .filter(|item| {
             if let Some(current_item) = current_items.get(&item.id) {
                 if (app.stateful && current_item.equal_stateful(item))
@@ -63,19 +69,17 @@ async fn handle_change(db: &Db, app_id: &str, app: &AppData) -> Result<(), Repor
 
             return true;
         })
-        .map(|item| Item::from_app_item(app_id.to_string(), item.clone()));
+        .map(|item| Item::from_app_item(app_id.to_string(), item));
 
     let mut tx = db.pool.begin().await.change_context(Error::Db)?;
 
-    db.create_or_update_app(tx.as_mut(), app_id, app).await?;
+    db.create_or_update_app(tx.as_mut(), app_id, &app).await?;
 
-    let mut changed_ids = Vec::new();
     for item in changed_items {
-        changed_ids.push(item.id.clone());
         db.create_or_update_item(tx.as_mut(), &item).await?;
     }
 
-    db.remove_unfound_items(tx.as_mut(), app_id, &changed_ids)
+    db.remove_unfound_items(tx.as_mut(), app_id, &item_ids)
         .await?;
 
     tx.commit().await.change_context(Error::Db)?;
