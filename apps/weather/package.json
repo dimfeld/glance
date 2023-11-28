@@ -3,7 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "dependencies": {
-    "glance-app": "file:../../platform/glance-app-js",
+    "glance-app": "file:../../platform/app-js",
     "ky": "^1.1.0"
   },
   "devDependencies": {

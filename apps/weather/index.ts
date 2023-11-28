@@ -48,10 +48,15 @@ const [forecast, hourly] = await Promise.all([
 console.dir(forecast, { depth: null });
 
 const period = forecast.properties.periods[0];
+const output = `${period.temperature} ${period.temperatureUnit}, <span title="${Bun.escapeHTML(
+  period.detailedForecast
+)}">${Bun.escapeHTML(period.shortForecast)}</span>, ${
+  period.probabilityOfPrecipitation?.value ?? 0
+}% Rain`;
+
 const appData: AppData = {
   name: 'Weather Forecast',
   path: __filename,
-  stateless: true,
   schedule: [
     {
       cron: '*/15 * * * *',
@@ -60,11 +65,7 @@ const appData: AppData = {
   items: [
     {
       id: period.startTime,
-      html: `${period.temperature} ${period.temperatureUnit}, <span title="${Bun.escapeHTML(
-        period.detailedForecast
-      )}">${Bun.escapeHTML(period.shortForecast)}</span>, ${
-        period.probabilityOfPrecipitation?.value ?? 0
-      }% Rain`,
+      html: Bun.escapeHTML(period.detailedForecast),
       updated: new Date().toISOString(),
     },
   ],
