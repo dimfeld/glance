@@ -41,10 +41,6 @@ pub struct AppUiInfo {
 #[cfg(feature = "sqlx")]
 sqlx_json_decode!(AppUiInfo);
 
-fn bool_true() -> bool {
-    true
-}
-
 /// An item published by the app
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 #[cfg_attr(feature = "sqlx", derive(sqlx::FromRow))]
@@ -57,8 +53,8 @@ pub struct AppItem {
     pub data: AppItemData,
 
     /// Whether the item can be dismissed by the viewer
-    #[serde(default = "bool_true")]
     #[cfg_attr(feature = "sqlx", sqlx(default))]
+    #[serde(default)]
     pub persistent: bool,
 
     /// Notifications for this item

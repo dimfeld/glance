@@ -14,7 +14,7 @@ FROM
   items
   LEFT JOIN item_notifications noti ON items.id = noti.item_id
     AND items.app_id = noti.app_id
-    AND NOT noti.dismissed WHERE items.dismissed = false
+    AND NOT noti.dismissed 
 GROUP BY
   items.id,
   items.app_id

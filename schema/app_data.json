@@ -78,7 +78,7 @@
         },
         "persistent": {
           "description": "Whether the item can be dismissed by the viewer",
-          "default": true,
+          "default": false,
           "type": "boolean"
         },
         "updated": {
