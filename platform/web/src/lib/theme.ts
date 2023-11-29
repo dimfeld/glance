@@ -34,13 +34,6 @@ export function createDarkStore(themeFromServer?: Theme): ThemeStore {
     }
 
     initialTheme = storedTheme ?? themeFromServer ?? 'system';
-
-    console.log({
-      preference,
-      themeFromServer,
-      initialTheme,
-      localStorage: window.localStorage.getItem(THEME_COOKIE_NAME),
-    });
   } else {
     initialTheme = themeFromServer ?? 'system';
   }

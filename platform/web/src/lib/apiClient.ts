@@ -1,5 +1,5 @@
 import ky, { type Options } from 'ky';
-import type { AppData, AppDataItem } from 'glance-app';
+import type { AppData, AppItem } from 'glance-app';
 
 const localApiUrl = '/api';
 
@@ -21,5 +21,5 @@ export function apiClient(url: string, options: Options & ApiClientExtraOptions 
 
 export interface ActiveItems {
   app: AppData & { id: string };
-  items: AppDataItem[];
+  items: (AppItem & { dismissed: boolean })[];
 }
