@@ -1,0 +1,28 @@
+description = "Summarize Comments"
+
+system_prompt = '''
+You summarize the Hacker News comments section.
+Note any interesting concepts or anecdotes, and the sentiment in the comments.
+Do not include how many comments there are or when they were made.
+'''
+
+template = '''
+{%if page_summary %}
+A web page titled {{title}} is summarized as {{page_summary}}.
+
+The comments on this page are:
+{% else %}
+Below are comments on a website titled {{title}}.
+{% endif %}
+
+
+{{extra}}
+
+
+The comments' summary is:
+'''
+
+[options]
+title = { type = "string" }
+page_summary = { type = "string", optional = true }
+

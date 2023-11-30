@@ -1,0 +1,17 @@
+description = "Summarize Page Content"
+
+system_prompt = '''
+You write concise, informative summaries of web pages in just one or two sentences.
+Focus on the main content of the page and ignore headers, footers, and other unimportant information.
+'''
+
+template = '''
+{{extra}}
+
+Summarize the above content, titled {{title}}.
+
+Summary:
+'''
+
+[options]
+title = { type = "string" }

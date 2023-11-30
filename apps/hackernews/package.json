@@ -1,0 +1,18 @@
+{
+  "name": "glance-hackernews",
+  "module": "index.ts",
+  "type": "module",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "glance-app": "file:../../platform/app-js",
+    "ky": "^1.1.0",
+    "minimist": "^1.2.8"
+  },
+  "devDependencies": {
+    "@types/minimist": "^1.2.5",
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
