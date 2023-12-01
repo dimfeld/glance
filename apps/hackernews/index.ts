@@ -7,6 +7,7 @@ import * as path from 'path';
 
 const args = minimist(Bun.argv.slice(2));
 const resummarize = args.resummarize;
+const rewrite = args.rewrite;
 
 const appId = 'hackernews';
 
@@ -35,6 +36,7 @@ interface CommentItem {
 
 interface DataFile {
   items: DataItem[];
+  previous: Record<string, number>;
 }
 
 interface DataItem {
@@ -47,13 +49,18 @@ interface DataItem {
 }
 
 const dataFilePath = path.join(appPaths(appId).appStateDir, 'hackernews.json');
-const NUM_STORIES = 20;
+const NUM_PAST_STORIES = 20;
+const NUM_TOP_STORIES = 5;
 
 let data: DataFile;
 try {
   data = await Bun.file(dataFilePath).json();
 } catch (e) {
-  data = { items: [] };
+  data = { items: [], previous: {} };
+}
+
+if(!data.previous) {
+  data.previous = {};
 }
 
 async function runPromptBox(template: string, args: string[], input?: string): Promise<string> {
@@ -71,18 +78,18 @@ async function runPromptBox(template: string, args: string[], input?: string): P
   return output;
 }
 
-async function bestStoryIds(): Promise<number[]> {
-  const stories = await ky('https://hacker-news.firebaseio.com/v0/beststories.json').json<
+async function topStoryIds(): Promise<number[]> {
+  const stories = await ky('https://hacker-news.firebaseio.com/v0/topstories.json').json<
     number[]
   >();
-  return stories.slice(0, NUM_STORIES);
+  return stories.slice(0, NUM_TOP_STORIES);
 }
 
 async function pastStoryIds(): Promise<number[]> {
   const page = await ky(`https://news.ycombinator.com/front`).text();
   const $ = cheerio.load(page);
   let ids = $('.athing')
-    .slice(0, NUM_STORIES)
+    .slice(0, NUM_PAST_STORIES)
     .map((_i, el) => +el.attribs.id)
     .toArray();
   return ids;
@@ -103,7 +110,6 @@ async function summarizePage(title: string, contents: string, cached?: DataItem)
 async function summarizeComments(
   title: string,
   contents: string,
-  pageSummary: string | undefined,
   cached?: DataItem
 ): Promise<string> {
   if (!contents) {
@@ -117,10 +123,6 @@ async function summarizeComments(
   let args = [];
   if (title) {
     args.push('--title', title);
-  }
-
-  if (pageSummary) {
-    args.push('--page_summary', pageSummary);
   }
 
   return runPromptBox('summarize-comments', args, contents);
@@ -155,7 +157,7 @@ async function fetchAndProcessStory(itemId: number, cached?: DataItem): Promise<
 
   const comments = parseHTMLComments(hnText);
 
-  let commentSummary = await summarizeComments(info.title, comments, pageSummary, cached);
+  let commentSummary = await summarizeComments(info.title, comments, cached);
   console.log('comments', commentSummary);
 
   let result = {
@@ -186,21 +188,21 @@ async function fetchAndProcessStory(itemId: number, cached?: DataItem): Promise<
 
 function parseHTMLComments(html: string): string {
   const $ = cheerio.load(html);
-  return $('.commtext').text();
+  return $('.commtext').map((_i, el) => {
+    $(el).find('.reply').remove();
+    return el;
+  }).text();
 }
 
 async function run(): Promise<AppItem[]> {
   let stories: DataItem[] = [];
 
-  if (resummarize) {
+  if (rewrite) {
+    stories = data.items;
+  } else if (resummarize) {
     for (let item of data.items) {
       let pageSummary = await summarizePage(item.info.title, item.page, item);
-      let commentSummary = await summarizeComments(
-        item.info.title,
-        item.comments,
-        item.pageSummary,
-        item
-      );
+      let commentSummary = await summarizeComments(item.info.title, item.comments, item);
 
       if (pageSummary !== item.pageSummary || commentSummary !== item.commentSummary) {
         item.pageSummary = pageSummary;
@@ -211,15 +213,32 @@ async function run(): Promise<AppItem[]> {
 
     stories = data.items;
   } else {
-    const topItems = await pastStoryIds();
+    const pastItems = await pastStoryIds();
+    const topItems = await topStoryIds();
+    const uniqueItems = new Set([...pastItems, ...topItems]);
 
     const itemCache = Object.fromEntries(data.items.map((item) => [item.info.id, item]));
 
-    for (let itemId of topItems) {
+    for (let itemId of [...uniqueItems]) {
+      const existing = itemCache[itemId];
+      if (data.previous[itemId] && !existing) {
+        // We already processed this item and it dropped off the list, so don't put it back on.
+        continue;
+      }
+
       const result = await fetchAndProcessStory(itemId, itemCache[itemId]);
       if (result) {
         stories.push(result);
+        data.previous[itemId] = result.info.time;
       }
+    }
+  }
+
+  // Stop tracking items older than 1 week
+  const cutoffTime = Date.now() / 1000 - 60 * 60 * 24 * 7;
+  for (let [item, time] of Object.entries(data.previous)) {
+    if (time < cutoffTime) {
+      delete data.previous[item];
     }
   }
 
@@ -230,7 +249,9 @@ async function run(): Promise<AppItem[]> {
       story.info.descendants
     } comments`;
 
-    let comments = story.commentSummary ? `From the comments:\n${story.commentSummary.trim()}` : '';
+    let commentsUrl = encodeURI(`https://news.ycombinator.com/item?id=${story.info.id}`);
+    let commentsHeader = `From the <a href="${commentsUrl}">comments</a>:`;
+    let comments = story.commentSummary ? `${commentsHeader}:\n${story.commentSummary.trim()}` : '';
 
     const detail = [story.pageSummary?.trim(), comments].filter(Boolean).join('\n\n');
 
@@ -240,7 +261,8 @@ async function run(): Promise<AppItem[]> {
       data: {
         title: story.info.title,
         subtitle,
-        detail: `<pre>${detail}</pre>`,
+        url: story.info.url,
+        detail: `${detail.replaceAll('\n', '<br />')}`,
       },
     };
   }) satisfies AppItem[];
