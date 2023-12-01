@@ -3,18 +3,12 @@ description = "Summarize Comments"
 system_prompt = '''
 You summarize the Hacker News comments section.
 Note any interesting concepts or anecdotes, and the sentiment in the comments.
+Focus on comments related to the title.
 Do not include how many comments there are or when they were made.
 '''
 
 template = '''
-{%if page_summary %}
-A web page titled {{title}} is summarized as {{page_summary}}.
-
-The comments on this page are:
-{% else %}
-Below are comments on a website titled {{title}}.
-{% endif %}
-
+Below are comments on a web page titled {{title}}.
 
 {{extra}}
 
@@ -22,7 +16,8 @@ Below are comments on a website titled {{title}}.
 The comments' summary is:
 '''
 
+model.context.trim_args = ["extra"]
+
 [options]
 title = { type = "string" }
-page_summary = { type = "string", optional = true }
 

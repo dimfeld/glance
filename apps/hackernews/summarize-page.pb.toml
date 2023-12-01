@@ -13,5 +13,7 @@ Summarize the above content, titled {{title}}.
 Summary:
 '''
 
+model.context.trim_args = ["extra"]
+
 [options]
 title = { type = "string" }
