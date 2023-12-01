@@ -21,7 +21,7 @@ interface StoryItem {
   time: number;
   title: string;
   type: 'story';
-  url: string;
+  url?: string;
 }
 
 interface CommentItem {
@@ -59,7 +59,7 @@ try {
   data = { items: [], previous: {} };
 }
 
-if(!data.previous) {
+if (!data.previous) {
   data.previous = {};
 }
 
@@ -130,10 +130,12 @@ async function summarizeComments(
 
 async function fetchAndProcessStory(itemId: number, cached?: DataItem): Promise<DataItem | null> {
   const [info, hnText] = await Promise.all([
-    ky(`https://hacker-news.firebaseio.com/v0/item/${itemId}.json`).then((r) =>
-      r.json<StoryItem>()
-    ),
-    ky(`https://news.ycombinator.com/item?id=${itemId}`).then((r) => r.text()),
+    ky(`https://hacker-news.firebaseio.com/v0/item/${itemId}.json`, {
+      retry: { statusCodes: [429, 503] },
+    }).then((r) => r.json<StoryItem>()),
+    ky(`https://news.ycombinator.com/item?id=${itemId}`, {
+      retry: { statusCodes: [429, 503] },
+    }).then((r) => r.text()),
   ]);
 
   if (info.type !== 'story' || info.dead) {
@@ -142,12 +144,17 @@ async function fetchAndProcessStory(itemId: number, cached?: DataItem): Promise<
 
   console.log(info);
 
-  let pageContents = cached?.page;
-  let pageSummary = cached?.pageSummary;
-  if (!pageContents) {
+  let pageContents = cached?.page ?? '';
+  let pageSummary = cached?.pageSummary ?? '';
+  if (!pageContents && info.url) {
     try {
       const res = await ky(info.url);
       pageContents = await res.text();
+      if (res.headers.get('content-type')?.includes('text/html')) {
+        const $ = cheerio.load(pageContents);
+        pageContents = $('body').prop('innerText') ?? '';
+      }
+
       pageSummary = await summarizePage(info.title, pageContents, cached);
       console.log('summary', pageSummary);
     } catch (e) {
@@ -188,10 +195,12 @@ async function fetchAndProcessStory(itemId: number, cached?: DataItem): Promise<
 
 function parseHTMLComments(html: string): string {
   const $ = cheerio.load(html);
-  return $('.commtext').map((_i, el) => {
-    $(el).find('.reply').remove();
-    return el;
-  }).text();
+  return $('.commtext')
+    .map((_i, el) => {
+      $(el).find('.reply').remove();
+      return el;
+    })
+    .text();
 }
 
 async function run(): Promise<AppItem[]> {
