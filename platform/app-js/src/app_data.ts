@@ -85,6 +85,10 @@ export interface AppItemData {
    * The title at the top of the card
    */
   title: string;
+  /**
+   * A URL to open when the title is clicked
+   */
+  url?: string | null;
 }
 /**
  * A notification from the app

@@ -122,6 +122,13 @@
         "title": {
           "description": "The title at the top of the card",
           "type": "string"
+        },
+        "url": {
+          "description": "A URL to open when the title is clicked",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },

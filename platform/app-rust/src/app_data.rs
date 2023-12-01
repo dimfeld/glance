@@ -77,6 +77,9 @@ pub struct AppItemData {
     /// Extra information which can be shown
     pub detail: Option<String>,
 
+    /// A URL to open when the title is clicked
+    pub url: Option<String>,
+
     /// An icon to show with this item
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
