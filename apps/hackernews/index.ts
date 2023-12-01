@@ -260,7 +260,7 @@ async function run(): Promise<AppItem[]> {
 
     let commentsUrl = encodeURI(`https://news.ycombinator.com/item?id=${story.info.id}`);
     let commentsHeader = `From the <a href="${commentsUrl}">comments</a>:`;
-    let comments = story.commentSummary ? `${commentsHeader}:\n${story.commentSummary.trim()}` : '';
+    let comments = story.commentSummary ? `${commentsHeader}\n${story.commentSummary.trim()}` : '';
 
     const detail = [story.pageSummary?.trim(), comments].filter(Boolean).join('\n\n');
 
