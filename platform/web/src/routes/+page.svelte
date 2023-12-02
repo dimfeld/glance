@@ -71,7 +71,7 @@
                   </div>
                 </Card.Header>
                 {#if data.detail}
-                  <Card.Content>{@html data.detail}</Card.Content>
+                  <Card.Content class="prose dark:prose-invert">{@html data.detail}</Card.Content>
                 {/if}
               </Card.Root>
             </article>
