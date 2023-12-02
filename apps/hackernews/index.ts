@@ -116,7 +116,7 @@ async function summarizeComments(
     return '';
   }
 
-  if (cached?.commentSummary && contents === cached?.comments && !resummarize) {
+  if (cached?.commentSummary && contents.length === cached?.comments.length && !resummarize) {
     return cached.commentSummary;
   }
 
@@ -128,13 +128,17 @@ async function summarizeComments(
   return runPromptBox('summarize-comments', args, contents);
 }
 
+function retryDelay(attemptCount: number) {
+  return Math.pow(2, attemptCount) * 1000;
+}
+
 async function fetchAndProcessStory(itemId: number, cached?: DataItem): Promise<DataItem | null> {
   const [info, hnText] = await Promise.all([
     ky(`https://hacker-news.firebaseio.com/v0/item/${itemId}.json`, {
-      retry: { statusCodes: [429, 503] },
+      retry: { limit: 2, delay: retryDelay },
     }).then((r) => r.json<StoryItem>()),
     ky(`https://news.ycombinator.com/item?id=${itemId}`, {
-      retry: { statusCodes: [429, 503] },
+      retry: { limit: 2, delay: retryDelay },
     }).then((r) => r.text()),
   ]);
 
@@ -267,6 +271,7 @@ async function run(): Promise<AppItem[]> {
     return {
       id: story.info.id.toString(),
       updated: story.updated,
+      // We never want to resurface these items after they're dismissed, so always use the same state_key.
       state_key: story.info.id.toString(),
       data: {
         title: story.info.title,
