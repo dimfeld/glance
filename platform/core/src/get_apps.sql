@@ -1,8 +1,7 @@
 SELECT
   id,
   name,
-  path,
-  stateful
+  path
 FROM
   apps
 WHERE

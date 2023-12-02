@@ -6,6 +6,7 @@ SELECT
   items.data AS "data: AppItemData",
   items.updated_at,
   items.created_at,
+  items.state_key,
   items.persistent,
   items.dismissed,
   array_agg(jsonb_build_object('id', noti.id, 'data', noti.data, 'dismissed',

@@ -8,7 +8,6 @@ pub struct AppInfo {
     pub id: String,
     pub name: String,
     pub path: String,
-    pub stateful: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -26,6 +25,7 @@ pub struct Item {
     // the query_as macro, so just duplicate the fields here.
     pub id: String,
     pub persistent: bool,
+    pub state_key: Option<String>,
     pub data: AppItemData,
     pub notify: Option<Vec<Notification>>,
     pub updated_at: chrono::DateTime<chrono::offset::Utc>,
@@ -42,16 +42,23 @@ impl Item {
             persistent: item.persistent,
             data: item.data,
             notify: Some(item.notify),
+            state_key: item.state_key,
             updated_at: item.updated,
             created_at: chrono::Utc::now(),
             dismissed: false,
         }
     }
 
-    /// Just check that the ID and the updated time of the item are the same.
+    /// Check if this item is considered changed from another item, using the state key if it is
+    /// set and comparing individual fields otherwise.
     #[instrument(level = "trace")]
-    pub fn equal_stateful(&self, other: &AppItem) -> bool {
-        self.id == other.id && self.updated_at == other.updated
+    pub fn changed_from(&self, other: &AppItem) -> bool {
+        match (self.state_key.as_ref(), other.state_key.as_ref()) {
+            (Some(a), Some(b)) => a != b,
+            (Some(_), None) => true,
+            (None, Some(_)) => true,
+            (None, None) => self.equal_stateless(other),
+        }
     }
 
     /// When the code that generated the item was not aware of the previous generated items,

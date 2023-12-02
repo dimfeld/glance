@@ -21,11 +21,6 @@ pub struct AppData {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub schedule: Vec<AppSchedule>,
 
-    /// If false, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write
-    /// If true, the app can just check the updated timestamp to see if an item has changed
-    #[serde(default)]
-    pub stateful: bool,
-
     /// Information only used to render the UI of the app
     pub ui: Option<AppUiInfo>,
 }
@@ -51,6 +46,15 @@ pub struct AppItem {
 
     /// Display information for the item
     pub data: AppItemData,
+
+    /// An ID that can be compared to a previous copy of the item to see if it should be considered
+    /// changed. On an item change, the data will be updated regardless, but the "dismissed" state
+    /// will be reset only if state_key has changed, so this can be used to skip resurfacing an
+    /// item when only small changes have been made.
+    ///
+    /// If state_key is not used, the platform will compare individual fields of the item.
+    #[cfg_attr(feature = "sqlx", sqlx(default))]
+    pub state_key: Option<String>,
 
     /// Whether the item can be dismissed by the viewer
     #[cfg_attr(feature = "sqlx", sqlx(default))]

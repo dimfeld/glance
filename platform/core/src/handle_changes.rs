@@ -56,27 +56,24 @@ async fn handle_change(db: &Db, app_id: &str, mut app: AppData) -> Result<(), Re
         .collect::<Vec<_>>();
 
     let items = std::mem::replace(&mut app.items, vec![]);
-    let changed_items = items
-        .into_iter()
-        .filter(|item| {
-            if let Some(current_item) = current_items.get(&item.id) {
-                if (app.stateful && current_item.equal_stateful(item))
-                    || (!app.stateful && current_item.equal_stateless(item))
-                {
-                    return false;
-                }
-            }
+    let changed_items = items.into_iter().map(|item| {
+        let resurface = if let Some(current_item) = current_items.get(&item.id) {
+            current_item.changed_from(&item)
+        } else {
+            true
+        };
 
-            return true;
-        })
-        .map(|item| Item::from_app_item(app_id.to_string(), item));
+        let item = Item::from_app_item(app_id.to_string(), item);
+        (item, resurface)
+    });
 
     let mut tx = db.pool.begin().await.change_context(Error::Db)?;
 
     db.create_or_update_app(tx.as_mut(), app_id, &app).await?;
 
-    for item in changed_items {
-        db.create_or_update_item(tx.as_mut(), &item).await?;
+    for (item, resurface) in changed_items {
+        db.create_or_update_item(tx.as_mut(), &item, resurface)
+            .await?;
     }
 
     db.remove_unfound_items(tx.as_mut(), app_id, &item_ids)

@@ -1,0 +1,5 @@
+ALTER TABLE items
+  DROP COLUMN state_key;
+
+ALTER TABLE apps
+  ADD COLUMN stateful boolean NOT NULL DEFAULT FALSE;

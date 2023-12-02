@@ -30,11 +30,6 @@
         "$ref": "#/definitions/AppSchedule"
       }
     },
-    "stateful": {
-      "description": "If false, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write If true, the app can just check the updated timestamp to see if an item has changed",
-      "default": false,
-      "type": "boolean"
-    },
     "ui": {
       "description": "Information only used to render the UI of the app",
       "anyOf": [
@@ -80,6 +75,13 @@
           "description": "Whether the item can be dismissed by the viewer",
           "default": false,
           "type": "boolean"
+        },
+        "state_key": {
+          "description": "An ID that can be compared to a previous copy of the item to see if it should be considered changed. On an item change, the data will be updated regardless, but the \"dismissed\" state will be reset only if state_key has changed, so this can be used to skip resurfacing an item when only small changes have been made.\n\nIf state_key is not used, the platform will compare individual fields of the item.",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "updated": {
           "description": "When the item was last updated",

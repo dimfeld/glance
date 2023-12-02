@@ -40,7 +40,9 @@
                       {#if data.title}
                         <Card.Title>
                           {#if data.url}
-                            <a href={data.url} target="_blank" rel="noreferrer">{data.title}</a>
+                            <a href={data.url} class="underline" target="_blank">
+                              {data.title}
+                            </a>
                           {:else}
                             {data.title}
                           {/if}

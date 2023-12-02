@@ -138,7 +138,6 @@ impl Db {
             app_id,
             app.name,
             app.path,
-            app.stateful,
             sqlx::types::Json(&app.ui) as _
         )
         .execute(tx)
@@ -153,14 +152,17 @@ impl Db {
         &self,
         tx: impl PgExecutor<'_>,
         item: &Item,
+        resurface: bool,
     ) -> Result<(), Report<Error>> {
         sqlx::query_file!(
             "src/create_or_update_item.sql",
             item.id,
             item.app_id,
             sqlx::types::Json(&item.data) as _,
+            item.state_key,
             item.persistent,
-            item.updated_at
+            item.updated_at,
+            resurface
         )
         .execute(tx)
         .await

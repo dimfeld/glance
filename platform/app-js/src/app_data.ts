@@ -26,10 +26,6 @@ export interface AppData {
    */
   schedule?: AppSchedule[];
   /**
-   * If false, the app does not keep its own state, so the platform should do a closer diff to see if an item has changed since the last write If true, the app can just check the updated timestamp to see if an item has changed
-   */
-  stateful?: boolean;
-  /**
    * Information only used to render the UI of the app
    */
   ui?: AppUiInfo | null;
@@ -54,6 +50,12 @@ export interface AppItem {
    * Whether the item can be dismissed by the viewer
    */
   persistent?: boolean;
+  /**
+   * An ID that can be compared to a previous copy of the item to see if it should be considered changed. On an item change, the data will be updated regardless, but the "dismissed" state will be reset only if state_key has changed, so this can be used to skip resurfacing an item when only small changes have been made.
+   *
+   * If state_key is not used, the platform will compare individual fields of the item.
+   */
+  state_key?: string | null;
   /**
    * When the item was last updated
    */

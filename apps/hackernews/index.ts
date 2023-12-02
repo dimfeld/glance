@@ -267,6 +267,7 @@ async function run(): Promise<AppItem[]> {
     return {
       id: story.info.id.toString(),
       updated: story.updated,
+      state_key: story.info.id.toString(),
       data: {
         title: story.info.title,
         subtitle,
@@ -291,5 +292,4 @@ writeAppData(appId, {
       cron: '0 */3 * * *',
     },
   ],
-  stateful: true,
 });
