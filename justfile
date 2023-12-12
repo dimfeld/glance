@@ -4,7 +4,10 @@ _default:
   @just --list
 
 watch-sql:
-  watchexec --exts tera -- sqlweld -v --formatter pg_format
+  watchexec --exts tera -- just sqlweld
+
+sqlweld:
+  sqlweld -v --formatter pg_format
 
 update-json-schema:
   cd dev-utils && cargo run --bin write_schema > ../schema/app_data.json
