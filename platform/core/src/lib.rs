@@ -3,7 +3,7 @@
 
 use std::path::PathBuf;
 
-use db::Db;
+use db::{Db, DbInner};
 use glance_app::{App, AppData};
 use tracing::{event, Level};
 
@@ -67,15 +67,20 @@ pub struct Platform {
 impl Platform {
     /// Create a new platform
     pub async fn new(config: PlatformOptions) -> Self {
-        let base_dir = config.base_dir.unwrap_or_else(App::base_data_dir);
+        let base_dir = config.base_dir.clone().unwrap_or_else(App::base_data_dir);
         std::fs::create_dir_all(&base_dir).expect("creating data directory");
         let (change_tx, change_rx) = flume::bounded(16);
+
+        let app_data_dir = config.base_dir.unwrap_or_else(App::data_dir);
 
         let db_url = config
             .database_url
             .unwrap_or_else(|| std::env::var("GLANCE_DATABASE_URL").unwrap_or_default());
 
-        let db = Db::new(&db_url).await.expect("creating database");
+        let db = DbInner::new(&db_url, &app_data_dir)
+            .await
+            .expect("creating database");
+        let db = std::sync::Arc::new(db);
 
         let change_handler =
             tokio::task::spawn(handle_changes::handle_changes(db.clone(), change_rx));
