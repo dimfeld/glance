@@ -5,6 +5,9 @@
   import { Button } from '$lib/components/ui/button';
   import { MailIcon, MailOpenIcon } from 'lucide-svelte';
   import { enhance } from '$app/forms';
+  import { onDestroy, onMount } from 'svelte';
+  import { invalidateAll } from '$app/navigation';
+  import { browser } from '$app/environment';
 
   export let data;
 
@@ -18,7 +21,46 @@
       };
     })
     .filter((app) => app.items.length > 0);
+
+  let canRefresh = browser ? document.visibilityState === 'visible' : false;
+  let lastRefresh = Date.now();
+  let refreshTimer: number | null = null;
+  const REFRESH_TIME = 15 * 60 * 1000;
+
+  function doRefresh() {
+    refreshTimer = null;
+    lastRefresh = Date.now();
+    invalidateAll();
+
+    if (canRefresh) {
+      setRefreshTimer();
+    }
+  }
+
+  function setRefreshTimer() {
+    const timeSinceRefresh = Date.now() - lastRefresh;
+    const time = Math.min(0, REFRESH_TIME - timeSinceRefresh);
+    refreshTimer = setTimeout(doRefresh, time);
+  }
+
+  $: if (browser) {
+    if (canRefresh && !refreshTimer) {
+      setRefreshTimer();
+    } else if (refreshTimer && !canRefresh) {
+      clearTimeout(refreshTimer);
+      refreshTimer = null;
+    }
+  }
+
+  onDestroy(() => {
+    if (browser && refreshTimer) {
+      clearTimeout(refreshTimer);
+      refreshTimer = null;
+    }
+  });
 </script>
+
+<svelte:window on:visibilitychange={() => (canRefresh = document.visibilityState === 'visible')} />
 
 <main class="m-4">
   <header class="flex w-full justify-end">
