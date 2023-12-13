@@ -1,3 +1,6 @@
+use std::{path::Path, sync::Arc};
+
+use effectum::Queue;
 use error_stack::{Report, ResultExt};
 use glance_app::{AppData, AppItemData, Notification};
 use itertools::Itertools;
@@ -11,14 +14,24 @@ use tracing::instrument;
 use crate::{
     error::Error,
     items::{AppInfo, AppItems, Item},
+    scheduled_task::ScheduledJobData,
 };
 
 /// The database for the glance platform
-#[derive(Clone)]
-pub struct Db {
+pub struct DbInner {
     /// The database connection pool
     pub pool: sqlx::PgPool,
+    pub(crate) task_queue: Queue,
 }
+
+impl std::fmt::Debug for DbInner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DbInner").finish_non_exhaustive()
+    }
+}
+
+/// The database for the glance platform, wrapped in an [Arc].
+pub type Db = Arc<DbInner>;
 
 /// Event types that can be recorded
 #[derive(Debug, Serialize, Deserialize, sqlx::Type)]
@@ -36,9 +49,9 @@ pub enum EventType {
     ScheduledRun,
 }
 
-impl Db {
+impl DbInner {
     /// Create a new database connection and run migrations if needed.
-    pub async fn new(database_url: &str) -> Result<Self, Report<Error>> {
+    pub async fn new(database_url: &str, data_dir: &Path) -> Result<Self, Report<Error>> {
         let pool = PgPool::connect(database_url)
             .await
             .change_context(Error::DbInit)?;
@@ -47,7 +60,11 @@ impl Db {
             .await
             .change_context(Error::DbInit)?;
 
-        Ok(Self { pool })
+        let task_queue = Queue::new(&data_dir.join("glance_tasks.db"))
+            .await
+            .change_context(Error::DbInit)?;
+
+        Ok(Self { pool, task_queue })
     }
 
     #[instrument(skip(self))]
@@ -102,6 +119,19 @@ impl Db {
             .await
             .change_context(Error::Db)?;
 
+        let scheduled = self
+            .task_queue
+            .list_recurring_jobs_with_prefix(app_id)
+            .await
+            .change_context(Error::TaskQueue)?;
+        for job in scheduled {
+            let res = self.task_queue.delete_recurring_job(job).await;
+            match res {
+                Err(effectum::Error::NotFound) => Ok(()),
+                _ => res.change_context(Error::TaskQueue),
+            }?;
+        }
+
         Ok(())
     }
 
@@ -138,11 +168,53 @@ impl Db {
             app_id,
             app.name,
             app.path,
-            sqlx::types::Json(&app.ui) as _
+            sqlx::types::Json(&app.ui) as _,
         )
         .execute(tx)
         .await
         .change_context(Error::Db)?;
+
+        let mut existing_jobs = self
+            .task_queue
+            .list_recurring_jobs_with_prefix(&format!("{app_id}:"))
+            .await
+            .change_context(Error::TaskQueue)?;
+
+        for schedule in &app.schedule {
+            let job_id = format!("{app_id}:{}", schedule.cron);
+            existing_jobs.retain(|existing| existing != &job_id);
+            self.task_queue
+                .upsert_recurring_job(
+                    job_id,
+                    effectum::RecurringJobSchedule::Cron {
+                        spec: schedule.cron.clone(),
+                    },
+                    effectum::Job::builder("scheduled-app")
+                        .json_payload(&ScheduledJobData {
+                            app_id: app_id.to_string(),
+                            command: app.path.clone(),
+                            schedule: schedule.clone(),
+                        })
+                        .change_context(Error::TaskQueue)?
+                        .timeout(std::time::Duration::from_secs(
+                            schedule.timeout.unwrap_or(300) as u64,
+                        ))
+                        .build(),
+                    false,
+                )
+                .await
+                .change_context(Error::TaskQueue)?;
+        }
+
+        // Anything left in existing_jobs was not seen as we went through the current schedule
+        // list.
+        for to_remove in existing_jobs {
+            self.task_queue
+                .delete_recurring_job(to_remove)
+                .await
+                .change_context(Error::TaskQueue)?;
+        }
+
         Ok(())
     }
 

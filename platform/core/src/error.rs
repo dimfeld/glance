@@ -16,6 +16,9 @@ pub enum Error {
     /// Database error not otherwise handled
     #[error("Database error")]
     Db,
+    /// Database error not otherwise handled
+    #[error("Task Queue error")]
+    TaskQueue,
     /// Failure deserializing an app data file
     #[error("Failed to read app data")]
     ReadAppData,
@@ -25,6 +28,9 @@ pub enum Error {
     /// Failure while shutting down
     #[error("Encountered error while shutting down")]
     Shutdown,
+    /// Error running a scheduled task
+    #[error("Error running scheduled task")]
+    ScheduledTask,
     /// The requested item was not found
     #[error("{0} not found")]
     NotFound(&'static str),
@@ -45,10 +51,12 @@ impl crate::server::error::HttpError for Error {
             Error::WrapReport(e) => e.current_context().error_kind(),
             Error::DbInit => "db_init",
             Error::Db => "db",
+            Error::TaskQueue => "task_queue",
             Error::ReadAppData => "read_app_data",
             Error::ServerStart => "server",
             Error::NotFound(_) => "not_found",
             Error::Shutdown => "shutdown",
+            Error::ScheduledTask => "scheduled_task",
         }
     }
 
@@ -57,10 +65,12 @@ impl crate::server::error::HttpError for Error {
             Error::WrapReport(e) => e.current_context().status_code(),
             Error::DbInit => StatusCode::INTERNAL_SERVER_ERROR,
             Error::Db => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::TaskQueue => StatusCode::INTERNAL_SERVER_ERROR,
             Error::ReadAppData => StatusCode::BAD_REQUEST,
             Error::ServerStart => StatusCode::INTERNAL_SERVER_ERROR,
             Error::NotFound(_) => StatusCode::NOT_FOUND,
             Error::Shutdown => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::ScheduledTask => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }

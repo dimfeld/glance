@@ -134,6 +134,10 @@ export interface AppSchedule {
    * The cron schedule for the app
    */
   cron: string;
+  /**
+   * How long to wait, in seconds, for the app to execute before killing it and retrying. Defaults to 5 minutes, or 300 seconds. This uses an int instead of a [Duration] for better interoperability with non-Rust apps.
+   */
+  timeout?: number | null;
 }
 /**
  * Information only used to render the UI of the app

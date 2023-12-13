@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "sqlx")]
 use sqlx_transparent_json_decode::sqlx_json_decode;
@@ -109,6 +111,11 @@ pub struct AppSchedule {
     /// Arguments to pass to the app
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub arguments: Vec<String>,
+
+    /// How long to wait, in seconds, for the app to execute before killing it and retrying.
+    /// Defaults to 5 minutes, or 300 seconds.
+    /// This uses an int instead of a [Duration] for better interoperability with non-Rust apps.
+    pub timeout: Option<u32>,
 }
 
 #[cfg(feature = "sqlx")]
