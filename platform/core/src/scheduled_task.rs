@@ -74,7 +74,7 @@ async fn run_scheduled_app(
 
     let res = tokio::time::timeout(duration.to_std().unwrap(), cmd.wait())
         .await
-        .change_context(Error::ScheduledTask)
+        .map_err(|_| Error::ScheduledTask)
         .attach_printable("Task timed out")?
         .change_context(Error::ScheduledTask)?;
 

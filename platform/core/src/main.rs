@@ -45,10 +45,10 @@ async fn serve(cmd: ServeCommand) -> Result<(), Report<Error>> {
         base_dir: cmd.base_dir,
         database_url: Some(cmd.database_url),
     })
-    .await;
+    .await?;
 
     let server = glance_core::server::create_server(glance_core::server::Config {
-        env: "development".into(),
+        env: &cmd.env,
         host: cmd.host,
         port: cmd.port,
         db: platform.db.clone(),
