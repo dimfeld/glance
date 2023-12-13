@@ -158,17 +158,24 @@ async function fetchAndProcessStory(itemId: number, cached?: DataItem): Promise<
         const $ = cheerio.load(pageContents);
         pageContents = $('body').prop('innerText') ?? '';
       }
-
-      pageSummary = await summarizePage(info.title, pageContents, cached);
-      console.log('summary', pageSummary);
     } catch (e) {
       console.error(itemId, e);
     }
   }
 
-  const comments = parseHTMLComments(hnText);
+  if (pageContents && !pageSummary) {
+    try {
+      pageSummary = await summarizePage(info.title, pageContents, cached);
+    } catch (e) {
+      console.error(itemId, e);
+    }
+  }
 
+  console.log('summary', pageSummary);
+
+  const comments = parseHTMLComments(hnText);
   let commentSummary = await summarizeComments(info.title, comments, cached);
+
   console.log('comments', commentSummary);
 
   let result = {
