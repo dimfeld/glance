@@ -60,19 +60,23 @@ async fn run_scheduled_app(
         .change_context(Error::ScheduledTask)
         .attach_printable_lazy(|| format!("Creating {}", stderr_fs_path.display()))?;
 
-    let mut cmd = tokio::process::Command::new(&data.command)
-        .args(&data.schedule.arguments)
+    let mut cmd = tokio::process::Command::new(&data.command);
+    cmd.args(&data.schedule.arguments)
         .stdout(std::process::Stdio::from(stdout_fs))
         .stderr(std::process::Stdio::from(stderr_fs))
-        .kill_on_drop(true)
-        .spawn()
-        .change_context(Error::ScheduledTask)?;
+        .kill_on_drop(true);
+
+    if let Some(wd) = std::path::PathBuf::from(&data.command).parent() {
+        cmd.current_dir(wd);
+    };
+
+    let mut proc = cmd.spawn().change_context(Error::ScheduledTask)?;
 
     let timeout = job.expires.load(std::sync::atomic::Ordering::Relaxed);
     let timeout = chrono::DateTime::from_timestamp(timeout, 0).unwrap();
     let duration = timeout - chrono::Utc::now();
 
-    let res = tokio::time::timeout(duration.to_std().unwrap(), cmd.wait())
+    let res = tokio::time::timeout(duration.to_std().unwrap(), proc.wait())
         .await
         .map_err(|_| Error::ScheduledTask)
         .attach_printable("Task timed out")?
