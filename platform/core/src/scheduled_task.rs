@@ -47,7 +47,7 @@ async fn run_scheduled_app(
     job: RunningJob,
     context: Arc<ScheduledJobContext>,
 ) -> Result<(), Report<Error>> {
-    let data: ScheduledJobData = job.json_payload().change_context(Error::TaskQueue)?;
+    let data: ScheduledJobData = job.json_payload().change_context(Error::ScheduledTask)?;
 
     event!(Level::INFO, cmd=%data.command, args=?data.schedule.arguments, "Running scheduled job");
 

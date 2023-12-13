@@ -294,7 +294,7 @@ writeAppData(appId, {
   items,
   schedule: [
     {
-      cron: '0 */3 * * *',
+      cron: '0 0 */3 * * *',
     },
   ],
 });

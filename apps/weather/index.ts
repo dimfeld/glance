@@ -36,8 +36,11 @@ interface Period {
   };
 }
 
+const LAT = process.env.LAT || '21.96163';
+const LON = process.env.LON || '-159.37478';
+
 const baseData = await ky(
-  `https://api.weather.gov/points/${process.env.LAT},${process.env.LON}`
+  `https://api.weather.gov/points/${LAT},${LON}`
 ).json<WeatherApiBaseResponse>();
 
 const [forecast, hourly] = await Promise.all([
@@ -53,7 +56,7 @@ const appData: AppData = {
   ui: {},
   schedule: [
     {
-      cron: '*/15 * * * *',
+      cron: '0 */15 * * * *',
     },
   ],
   items: [
