@@ -15,6 +15,7 @@ pub mod error;
 mod fs_source;
 mod handle_changes;
 mod items;
+mod scheduled_task;
 /// The HTTP server
 pub mod server;
 /// Tracing setup

@@ -14,13 +14,20 @@ use tracing::instrument;
 use crate::{
     error::Error,
     items::{AppInfo, AppItems, Item},
+    scheduled_task::ScheduledJobData,
 };
 
 /// The database for the glance platform
 pub struct DbInner {
     /// The database connection pool
     pub pool: sqlx::PgPool,
-    task_queue: Queue,
+    pub(crate) task_queue: Queue,
+}
+
+impl std::fmt::Debug for DbInner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DbInner").finish_non_exhaustive()
+    }
 }
 
 /// The database for the glance platform, wrapped in an [Arc].
@@ -53,7 +60,7 @@ impl DbInner {
             .await
             .change_context(Error::DbInit)?;
 
-        let task_queue = Queue::new(&data_dir.join("effectum.db"))
+        let task_queue = Queue::new(&data_dir.join("glance_tasks.db"))
             .await
             .change_context(Error::DbInit)?;
 
@@ -183,7 +190,11 @@ impl DbInner {
                         spec: schedule.cron.clone(),
                     },
                     effectum::Job::builder("scheduled-app")
-                        .json_payload(schedule)
+                        .json_payload(&ScheduledJobData {
+                            app_id: app_id.to_string(),
+                            command: app.path.clone(),
+                            schedule: schedule.clone(),
+                        })
                         .change_context(Error::TaskQueue)?
                         .timeout(std::time::Duration::from_secs(
                             schedule.timeout.unwrap_or(300) as u64,

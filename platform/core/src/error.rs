@@ -28,6 +28,9 @@ pub enum Error {
     /// Failure while shutting down
     #[error("Encountered error while shutting down")]
     Shutdown,
+    /// Error running a scheduled task
+    #[error("Error running scheduled task")]
+    ScheduledTask,
     /// The requested item was not found
     #[error("{0} not found")]
     NotFound(&'static str),
@@ -53,6 +56,7 @@ impl crate::server::error::HttpError for Error {
             Error::ServerStart => "server",
             Error::NotFound(_) => "not_found",
             Error::Shutdown => "shutdown",
+            Error::ScheduledTask => "scheduled_task",
         }
     }
 
@@ -66,6 +70,7 @@ impl crate::server::error::HttpError for Error {
             Error::ServerStart => StatusCode::INTERNAL_SERVER_ERROR,
             Error::NotFound(_) => StatusCode::NOT_FOUND,
             Error::Shutdown => StatusCode::INTERNAL_SERVER_ERROR,
+            Error::ScheduledTask => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
