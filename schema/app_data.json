@@ -151,6 +151,15 @@
         "cron": {
           "description": "The cron schedule for the app",
           "type": "string"
+        },
+        "timeout": {
+          "description": "How long to wait, in seconds, for the app to execute before killing it and retrying. Defaults to 5 minutes, or 300 seconds. This uses an int instead of a [Duration] for better interoperability with non-Rust apps.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0.0
         }
       }
     },

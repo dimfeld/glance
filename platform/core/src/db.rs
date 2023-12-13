@@ -185,6 +185,9 @@ impl DbInner {
                     effectum::Job::builder("scheduled-app")
                         .json_payload(schedule)
                         .change_context(Error::TaskQueue)?
+                        .timeout(std::time::Duration::from_secs(
+                            schedule.timeout.unwrap_or(300) as u64,
+                        ))
                         .build(),
                     false,
                 )
