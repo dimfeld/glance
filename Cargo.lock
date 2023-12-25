@@ -712,9 +712,9 @@ checksum = "545b22097d44f8a9581187cdf93de7a71e4722bf51200cfaba810865b49a495d"
 
 [[package]]
 name = "effectum"
-version = "0.4.0-beta.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd66b3b6f2d786771b75e47a42ecbca5a7010153f365dc3ae0791faacdad97c1"
+checksum = "bff7ae7e3ee2622ee5110d7e7606fca8205296b0499e0b8c961b977a85ea5ed2"
 dependencies = [
  "ahash",
  "backoff",
@@ -2485,9 +2485,9 @@ dependencies = [
 
 [[package]]
 name = "rusqlite_migration"
-version = "1.1.0-beta.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5767f8cb28e54d1ed745f072b72c6e68bfa6179fabb4cd15bdb8575858e301d"
+checksum = "e4116d1697de2912db0b72069473dfb025f6c332b4a085ed041d121e8d745aea"
 dependencies = [
  "log",
  "rusqlite",

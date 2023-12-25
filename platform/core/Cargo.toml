@@ -15,7 +15,7 @@ axum-extra = { version = "0.8.0", features = ["typed-routing", "form"] }
 chrono = { version = "0.4.31", features = ["serde"] }
 clap = { version = "4.4.8", features = ["derive", "env"] }
 dotenvy = "0.15.7"
-effectum = "0.4.0-beta.2"
+effectum = "0.4.0"
 error-stack = { version = "0.4.1", features = ["eyre"] }
 flume = { version = "0.11.0" }
 futures = "0.3.29"
