@@ -1,17 +1,21 @@
 <script lang="ts">
   import SideLabelled from '$lib/components/SideLabelled.svelte';
-  import * as Card from '$lib/components/ui/card';
-  import Switch from '$lib/components/ui/switch/switch.svelte';
-  import { Button } from '$lib/components/ui/button';
-  import { MailIcon, MailOpenIcon } from 'lucide-svelte';
+  // import * as Card from '$lib/components/ui/card';
+  // import Switch from '$lib/components/ui/switch/switch.svelte';
+  // import { Button } from '$lib/components/ui/button';
+  import { mdiEmailOutline, mdiEmailOpenOutline } from '@mdi/js';
   import { enhance } from '$app/forms';
   import { onDestroy, onMount } from 'svelte';
   import { invalidateAll } from '$app/navigation';
   import { browser } from '$app/environment';
+  import { Button, Card, Switch, getSettings } from 'svelte-ux';
+  import DarkModeSwitch from '$lib/components/DarkModeSwitch.svelte';
 
   export let data;
 
   let showDismissed = false;
+
+  const { currentTheme } = getSettings();
 
   $: apps = data.apps
     .map((app) => {
@@ -38,8 +42,9 @@
   }
 
   function setRefreshTimer() {
+    console.trace('setRefreshTimer');
     const timeSinceRefresh = Date.now() - lastRefresh;
-    const time = Math.min(0, REFRESH_TIME - timeSinceRefresh);
+    const time = Math.max(0, REFRESH_TIME - timeSinceRefresh);
     refreshTimer = setTimeout(doRefresh, time);
   }
 
@@ -63,59 +68,61 @@
 <svelte:window on:visibilitychange={() => (canRefresh = document.visibilityState === 'visible')} />
 
 <main class="m-4">
-  <header class="flex w-full justify-end">
-    <SideLabelled label="Show dismissed" id="show_dismissed" let:id>
-      <Switch {id} bind:checked={showDismissed} />
-    </SideLabelled>
+  <header class="flex w-full justify-end gap-4">
+    <DarkModeSwitch />
+    <label class="flex items-center gap-2" for="show-dismissed-switch">
+      <Switch id="show-dismissed-switch" bind:checked={showDismissed} />
+      Show dismissed
+    </label>
   </header>
   <div class="flex flex-col gap-8">
     {#each apps as { app, items } (app.id)}
       <section>
-        <h2 class="mb-4 text-xl">{app.name}</h2>
+        <h2 class="text-surface-content/75 mb-4 text-xl font-medium">{app.name}</h2>
         <div class="flex flex-col gap-8">
           {#each items as { id, dismissed, persistent, data } (id)}
             <article>
-              <Card.Root>
-                <Card.Header>
-                  <div class="grid grid-cols-[1fr_auto]">
-                    <div>
-                      {#if data.title}
-                        <Card.Title>
-                          {#if data.url}
-                            <a href={data.url} class="underline" target="_blank">
-                              {data.title}
-                            </a>
-                          {:else}
+              <Card>
+                <div slot="header" class="grid grid-cols-[1fr_auto]">
+                  <div>
+                    {#if data.title}
+                      <h2 class="text-primary/75">
+                        {#if data.url}
+                          <a href={data.url} class="underline" target="_blank">
                             {data.title}
-                          {/if}
-                        </Card.Title>
-                      {/if}
-                      {#if data.subtitle}
-                        <Card.Description>
-                          {data.subtitle}
-                        </Card.Description>
-                      {/if}
-                    </div>
-                    {#if !persistent}
-                      <form method="POST" action="?/toggle_dismissed" use:enhance>
-                        <input type="hidden" name="app_id" value={app.id} />
-                        <input type="hidden" name="item_id" value={id} />
-                        <input type="hidden" name="current_dismissed" value={dismissed} />
-                        <Button type="submit" variant="outline" size="icon">
-                          {#if dismissed}
-                            <MailOpenIcon />
-                          {:else}
-                            <MailIcon />
-                          {/if}
-                        </Button>
-                      </form>
+                          </a>
+                        {:else}
+                          {data.title}
+                        {/if}
+                      </h2>
+                    {/if}
+                    {#if data.subtitle}
+                      <div class="text-surface-content/50 text-sm">
+                        {data.subtitle}
+                      </div>
                     {/if}
                   </div>
-                </Card.Header>
-                {#if data.detail}
-                  <Card.Content class="prose dark:prose-invert">{@html data.detail}</Card.Content>
-                {/if}
-              </Card.Root>
+                  {#if !persistent}
+                    <form method="POST" action="?/toggle_dismissed" use:enhance>
+                      <input type="hidden" name="app_id" value={app.id} />
+                      <input type="hidden" name="item_id" value={id} />
+                      <input type="hidden" name="current_dismissed" value={dismissed} />
+                      <Button
+                        type="submit"
+                        color="primary"
+                        variant="fill-light"
+                        icon={dismissed ? mdiEmailOpenOutline : mdiEmailOutline}
+                      />
+                    </form>
+                  {/if}
+                </div>
+
+                <div slot="contents">
+                  {#if data.detail}
+                    <div class="prose dark:prose-invert">{@html data.detail}</div>
+                  {/if}
+                </div>
+              </Card>
             </article>
           {/each}
         </div>

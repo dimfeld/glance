@@ -1,15 +1,12 @@
 <script>
-  import { addDarkMode, createDarkStore } from '$lib/theme';
+  import { ThemeInit, settings } from 'svelte-ux';
   import '../app.pcss';
 
-  export let data;
-
-  const dark = createDarkStore(data.theme).resolved();
+  settings({});
 </script>
 
-<!-- Also add it on the body so that it's applied to the background with overscroll -->
-<svelte:body use:addDarkMode={$dark} />
+<ThemeInit />
 
-<div id="top" class="w-full min-h-screen h-full overflow-auto" class:dark={$dark === 'dark'}>
+<div id="top" class="bg-surface-100 text-surface-content h-full min-h-screen w-full overflow-auto">
   <slot />
 </div>
