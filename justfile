@@ -15,3 +15,7 @@ update-json-schema:
 
 setup-db:
   cd platform/core && sqlx database setup
+
+filigree:
+  cd ../filigree/filigree-cli && cargo build
+  cd platform/core && ../../../filigree/target/debug/filigree

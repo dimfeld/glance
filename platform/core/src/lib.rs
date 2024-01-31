@@ -1,28 +1,35 @@
-#![warn(missing_docs)]
 //! Glance platform core
-
-use std::path::PathBuf;
-
-use db::{Db, DbInner};
-use error::Error;
-use error_stack::{Report, ResultExt};
-use glance_app::{App, AppData};
-use scheduled_task::create_scheduled_task_runner;
-use tracing::{event, Level};
-
+#![warn(missing_docs)]
+pub mod auth;
 /// Database implementation
 pub mod db;
+pub mod emails;
 /// Define errors
 pub mod error;
 #[cfg(feature = "fs-source")]
 mod fs_source;
 mod handle_changes;
 mod items;
+pub mod models;
 mod scheduled_task;
 /// The HTTP server
 pub mod server;
+#[cfg(test)]
+pub mod tests;
 /// Tracing setup
 pub mod tracing_config;
+pub mod users;
+pub mod util_cmd;
+
+use std::path::PathBuf;
+
+use db::{Db, DbInner};
+pub use error::Error;
+use error_stack::{Report, ResultExt};
+use glance_app::{App, AppData};
+use scheduled_task::create_scheduled_task_runner;
+use sqlx::PgPool;
+use tracing::{event, Level};
 
 /// An app data update
 pub enum AppFileContents {
@@ -50,13 +57,11 @@ pub struct AppFileInput {
 }
 
 /// Configuration for the platform
-#[derive(Default)]
 pub struct PlatformOptions {
     /// Override the data directory
     pub base_dir: Option<PathBuf>,
-    /// Override the database URL
-    /// Defaults to reading DATABASE_URL from the environment
-    pub database_url: Option<String>,
+    /// The database pool
+    pub db: PgPool,
 }
 
 /// The platform data
@@ -76,11 +81,7 @@ impl Platform {
         std::fs::create_dir_all(&base_dir).expect("creating data directory");
         let (change_tx, change_rx) = flume::bounded(16);
 
-        let db_url = config
-            .database_url
-            .unwrap_or_else(|| std::env::var("GLANCE_DATABASE_URL").unwrap_or_default());
-
-        let db = DbInner::new(&db_url, &base_dir)
+        let db = DbInner::new(config.db, &base_dir)
             .await
             .expect("creating database");
         let db = std::sync::Arc::new(db);

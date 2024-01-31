@@ -10,17 +10,23 @@ workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.6.20"
-axum-extra = { version = "0.8.0", features = ["typed-routing", "form"] }
+async-trait = "0.1.75"
+axum = { version = "0.7.3", features = ["tokio", "http1", "http2", "macros"] }
+axum-extra = { version = "0.9.2", features = ["typed-routing", "form", "query"] }
+axum-jsonschema = "0.8.0"
+axum-sqlx-tx = { version = "0.8.0", features = ["postgres", "runtime-tokio-rustls"] }
 chrono = { version = "0.4.31", features = ["serde"] }
-clap = { version = "4.4.8", features = ["derive", "env"] }
+clap = { version = "4.4.11", features = ["derive", "env"] }
 dotenvy = "0.15.7"
 effectum = "0.4.0"
 error-stack = { version = "0.4.1", features = ["eyre"] }
+eyre = "0.6.11"
+filigree = { path = "../../../filigree/filigree" }
 flume = { version = "0.11.0" }
-futures = "0.3.29"
+futures = "0.3.30"
 glance-app = { path = "../app-rust", features = ["sqlx"] }
-hyper = "^0.14"
+http = "1.0.0"
+hyper = { version = "1.1.0", features = ["server", "http1", "http2"] }
 itertools = "0.11.0"
 log = "0.4.20"
 notify-debouncer-mini = { version = "0.4.1", optional = true }
@@ -28,23 +34,33 @@ opentelemetry = { version= "0.21.0" }
 opentelemetry-jaeger = { version = "0.20.0", features = [ "rt-tokio-current-thread" ]}
 opentelemetry-otlp = "0.14.0"
 opentelemetry_sdk = { version= "0.21.1", features = [ "rt-tokio-current-thread" ] }
+percent-encoding = "2.3.1"
+reqwest = { version = "0.11.23", features = ["cookies", "json"] }
+rust-embed = "8.1.0"
+schemars = { version = "0.8.16", features = ["chrono", "url", "uuid1"] }
 serde = { version = "1.0.189", features = ["derive"] }
 serde_json = "1.0.107"
 sqlx = { version = "0.7.3", features = ["postgres", "runtime-tokio", "chrono", "tls-rustls"] }
 sqlx-transparent-json-decode = { version = "2.1.0", features = ["serde"] }
+tera = "1.19.1"
 thiserror = "1.0.50"
 tokio = { version = "1.34.0", features = ["full", "tracing"] }
 tonic = "0.9.2"
 tower = "0.4.13"
-tower-http = { version = "0.4.4", features = ["util", "catch-panic", "request-id", "trace", "limit", "compression-deflate", "compression-gzip", "compression-zstd", "decompression-full"] }
+tower-cookies = "0.10.0"
+tower-http = { version = "0.5.1", features = ["util", "catch-panic", "request-id", "trace", "limit", "compression-deflate", "compression-gzip", "compression-zstd", "decompression-full", "full"] }
 tracing = "0.1.40"
 tracing-error = "0.2.0"
 tracing-honeycomb = "0.4.3"
 tracing-log = "0.2.0"
 tracing-opentelemetry = "0.22.0"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "chrono"] }
 tracing-tree = "0.3.0"
+uuid = "1.6.1"
 
 [features]
 default = ["fs-source"]
 fs-source = ["dep:notify-debouncer-mini"]
+
+[dev-dependencies]
+tempfile = "3.9.0"

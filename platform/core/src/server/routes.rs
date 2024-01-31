@@ -1,3 +1,3 @@
 pub mod items;
 
-pub(super) use super::{InnerState, ServerState};
+pub(super) use super::ServerState;

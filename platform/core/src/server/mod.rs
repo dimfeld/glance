@@ -1,37 +1,101 @@
-pub mod error;
-mod obfuscate_errors;
-mod panic_handler;
-mod routes;
-
 use std::{
     future::Future,
     net::{IpAddr, SocketAddr},
     sync::Arc,
+    time::Duration,
 };
 
-use axum::{routing::IntoMakeService, Router};
+use axum::{extract::FromRef, routing::get, Router};
 use error_stack::{Report, ResultExt};
-use hyper::server::conn::AddrIncoming;
+use filigree::{
+    auth::{
+        oauth::providers::OAuthProvider, CorsSetting, ExpiryStyle, SessionBackend,
+        SessionCookieBuilder,
+    },
+    errors::{panic_handler, ObfuscateErrorLayer, ObfuscateErrorLayerSettings},
+    server::FiligreeState,
+};
+use sqlx::PgPool;
 use tower::ServiceBuilder;
 use tower_http::{
-    catch_panic::CatchPanicLayer,
+    compression::CompressionLayer,
+    cors::CorsLayer,
     request_id::MakeRequestUuid,
-    trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
+    timeout::TimeoutLayer,
+    trace::{DefaultMakeSpan, DefaultOnFailure, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     ServiceBuilderExt,
 };
 use tracing::{event, Level};
 
 use crate::{db::Db, error::Error};
 
+mod health;
+mod meta;
+mod routes;
+#[cfg(test)]
+mod tests;
+
 /// Shared state used by the server
-pub struct InnerState {
+pub struct ServerStateInner {
     /// If the app is running in production mode. This should be used sparingly as there should be
-    /// a minimum of difference between production and development.
-    production: bool,
-    db: Db,
+    /// a minimum of difference between production and development to prevent bugs.
+    pub production: bool,
+    /// If the app is being hosted on plain HTTP
+    pub insecure: bool,
+    /// State for internal filigree endpoints
+    pub filigree: Arc<FiligreeState>,
+    /// The database pool
+    pub db: PgPool,
+    /// Wrappers around database functionality
+    pub orm: Db,
 }
 
-pub(super) type ServerState = Arc<InnerState>;
+impl ServerStateInner {
+    pub fn site_scheme(&self) -> &'static str {
+        if self.insecure {
+            "http"
+        } else {
+            "https"
+        }
+    }
+}
+
+impl std::ops::Deref for ServerStateInner {
+    type Target = FiligreeState;
+
+    fn deref(&self) -> &Self::Target {
+        &self.filigree
+    }
+}
+
+#[derive(Clone)]
+pub struct ServerState(Arc<ServerStateInner>);
+
+impl std::ops::Deref for ServerState {
+    type Target = ServerStateInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl FromRef<ServerState> for Arc<FiligreeState> {
+    fn from_ref(inner: &ServerState) -> Self {
+        inner.0.filigree.clone()
+    }
+}
+
+impl FromRef<ServerState> for PgPool {
+    fn from_ref(inner: &ServerState) -> Self {
+        inner.0.db.clone()
+    }
+}
+
+impl FromRef<ServerState> for SessionBackend {
+    fn from_ref(inner: &ServerState) -> Self {
+        inner.0.session_backend.clone()
+    }
+}
 
 /// The server and related information
 pub struct Server {
@@ -39,113 +103,193 @@ pub struct Server {
     pub host: String,
     /// The port the server is bound to
     pub port: u16,
-    /// The server. Await this to actually start running.
-    pub server: axum::Server<AddrIncoming, IntoMakeService<Router>>,
+    /// The server itself.
+    pub app: Router<()>,
     /// The server state.
-    pub state: Arc<InnerState>,
+    pub state: ServerState,
+    pub listener: tokio::net::TcpListener,
 }
 
 impl Server {
-    /// Run the server and wait for everything to close down once the server finishes.
+    /// Run the server, and perform a graceful shutdown when receiving a ctrl+c (SIGINT or
+    /// equivalent).
     pub async fn run(self) -> Result<(), Report<Error>> {
-        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
-
-        tokio::task::spawn(async move {
-            tokio::signal::ctrl_c()
-                .await
-                .expect("failed to listen for ctrl+c");
-            shutdown_tx.send(()).ok();
-        });
-
-        self.run_with_shutdown_signal(shutdown_rx).await
+        let shutdown = filigree::server::shutdown_signal();
+        self.run_with_shutdown_signal(shutdown).await
     }
 
     /// Run the server, and shut it down when `shutdown_rx` closes.
-    pub async fn run_with_shutdown_signal<T>(
+    pub async fn run_with_shutdown_signal(
         self,
-        shutdown_rx: impl Future<Output = T> + Send + 'static,
+        shutdown: impl Future<Output = ()> + Send + 'static,
     ) -> Result<(), Report<Error>> {
-        let (internal_shutdown_tx, internal_shutdown_rx) = tokio::sync::oneshot::channel();
-
-        tokio::task::spawn(async move {
-            shutdown_rx.await;
-            internal_shutdown_tx.send(()).ok();
-        });
-
-        self.server
-            .with_graceful_shutdown(async move {
-                internal_shutdown_rx.await.ok();
-                event!(Level::INFO, "Shutting down server");
-            })
+        axum::serve(self.listener, self.app)
+            .with_graceful_shutdown(shutdown)
             .await
             .change_context(Error::ServerStart)?;
+        event!(Level::INFO, "Shutting down server");
+
+        // Can do extra shutdown tasks here.
 
         Ok(())
     }
 }
 
+/// Create a TCP listener.
+pub async fn create_tcp_listener(
+    host: &str,
+    port: u16,
+) -> Result<tokio::net::TcpListener, Report<Error>> {
+    let bind_ip = host.parse::<IpAddr>().change_context(Error::ServerStart)?;
+    let bind_addr = SocketAddr::from((bind_ip, port));
+    tokio::net::TcpListener::bind(bind_addr)
+        .await
+        .change_context(Error::ServerStart)
+}
+
+pub enum ServerBind {
+    /// A host and port to bind to
+    HostPort(String, u16),
+    /// An existing TCP listener to use
+    Listener(tokio::net::TcpListener),
+}
+
 /// Configuration for the server
-pub struct Config<'a> {
+pub struct Config {
     /// The environment we're running in. Currently this just distinguishes between
     /// "development" and any other value.
-    pub env: &'a str,
-    /// The host to bind to.
-    pub host: String,
-    /// The port to bind to
-    pub port: u16,
-    /// The database from the Platform
+    pub env: String,
+    /// The host and port to bind to, or an existing TCP listener
+    pub bind: ServerBind,
+    /// True if the site is being hosted on plain HTTP. This should only be set in a development
+    /// or testing environment.
+    pub insecure: bool,
+    /// How long to wait before timing out a request
+    pub request_timeout: std::time::Duration,
     pub db: Db,
+
+    pub cookie_configuration: SessionCookieBuilder,
+    pub session_expiry: ExpiryStyle,
+    pub new_user_flags: filigree::server::NewUserFlags,
+    pub email_sender: filigree::email::services::EmailSender,
+
+    pub hosts: Vec<String>,
+    pub api_cors: filigree::auth::CorsSetting,
+
+    /// The base URL for OAuth redirect URLs.
+    pub oauth_redirect_url_base: String,
+    /// Set the OAuth providers. If this is None, OAuth providers will be configured based on the
+    /// environment variables present for each provider. See
+    /// [filigree::auth::oauth::providers::create_supported_providers] for the logic there.
+    ///
+    /// OAuth can be disabled, regardless of environment variable settings, but passing `Some(Vec::new())`.
+    pub oauth_providers: Option<Vec<Box<dyn OAuthProvider>>>,
 }
 
 /// Create the server and return it, ready to run.
-pub async fn create_server(config: Config<'_>) -> Result<Server, Report<Error>> {
+pub async fn create_server(config: Config) -> Result<Server, Report<Error>> {
     let production = config.env != "development" && !cfg!(debug_assertions);
 
-    let state = Arc::new(InnerState {
+    let host_values = config
+        .hosts
+        .iter()
+        .map(|h| h.parse::<http::header::HeaderValue>())
+        .collect::<Result<Vec<_>, _>>()
+        .change_context(Error::ServerStart)
+        .attach_printable("Unable to parse hosts list")?;
+
+    let pg_pool = config.db.pool.clone();
+    let oauth_redirect_base = format!("{}/api/auth/oauth/login", config.oauth_redirect_url_base);
+    let state = ServerState(Arc::new(ServerStateInner {
         production,
-        db: config.db,
-    });
+        filigree: Arc::new(FiligreeState {
+            http_client: reqwest::Client::new(),
+            db: pg_pool.clone(),
+            email: config.email_sender,
+            new_user_flags: config.new_user_flags,
+            hosts: config.hosts,
+            user_creator: Box::new(crate::users::users::UserCreator),
+            oauth_providers: config.oauth_providers.unwrap_or_else(|| {
+                filigree::auth::oauth::providers::create_supported_providers(&oauth_redirect_base)
+            }),
+            session_backend: SessionBackend::new(
+                config.db.pool.clone(),
+                config.cookie_configuration,
+                config.session_expiry,
+            ),
+        }),
+        insecure: config.insecure,
+        db: pg_pool.clone(),
+        orm: config.db,
+    }));
 
-    let app: Router<ServerState> = Router::new().merge(routes::items::routes()).layer(
-        ServiceBuilder::new()
-            .layer(CatchPanicLayer::custom(move |err| {
-                panic_handler::handle_panic(production, err)
-            }))
-            .layer(obfuscate_errors::ObfuscateErrorLayer::new(
-                production, false,
-            ))
-            .decompression()
-            .compression()
-            // .layer(tower_cookies::CookieManagerLayer::new())
-            .set_x_request_id(MakeRequestUuid)
-            .propagate_x_request_id()
-            .layer(
-                TraceLayer::new_for_http()
-                    .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
-                    .on_response(DefaultOnResponse::new().level(Level::INFO))
-                    .on_request(DefaultOnRequest::new().level(Level::INFO)),
-            )
-            .into_inner(),
-    );
+    let auth_queries = Arc::new(crate::auth::AuthQueries::new(
+        pg_pool,
+        config.session_expiry,
+    ));
 
-    let app: Router<()> = app.with_state(state.clone());
+    let api_cors_layer = match config.api_cors {
+        CorsSetting::None => CorsLayer::new(),
+        CorsSetting::AllowAll => CorsLayer::permissive().max_age(Duration::from_secs(60 * 60)),
+        CorsSetting::AllowHostList => CorsLayer::new()
+            .allow_origin(host_values)
+            .allow_methods(tower_http::cors::Any)
+            .max_age(Duration::from_secs(60 * 60)),
+    };
 
-    let bind_ip = config
-        .host
-        .parse::<IpAddr>()
-        .change_context(Error::ServerStart)?;
-    let bind_addr = SocketAddr::from((bind_ip, config.port));
-    let builder = axum::Server::bind(&bind_addr);
+    let api_routes: Router<ServerState> = Router::new()
+        .route("/healthz", get(health::healthz))
+        .nest("/meta", meta::create_routes())
+        .merge(filigree::auth::endpoints::create_routes())
+        .merge(filigree::auth::oauth::create_routes())
+        .merge(crate::models::create_routes())
+        .merge(crate::users::users::create_routes())
+        .merge(crate::auth::create_routes())
+        .merge(routes::items::routes())
+        .layer(
+            ServiceBuilder::new()
+                .layer(panic_handler(production))
+                .layer(ObfuscateErrorLayer::new(ObfuscateErrorLayerSettings {
+                    enabled: production,
+                    ..Default::default()
+                }))
+                .layer(
+                    TraceLayer::new_for_http()
+                        .make_span_with(DefaultMakeSpan::new().level(Level::INFO))
+                        .on_response(DefaultOnResponse::new().level(Level::INFO))
+                        .on_request(DefaultOnRequest::new().level(Level::INFO))
+                        .on_failure(DefaultOnFailure::new().level(Level::ERROR)),
+                )
+                .layer(TimeoutLayer::new(config.request_timeout))
+                .layer(api_cors_layer)
+                .layer(CompressionLayer::new())
+                .layer(tower_cookies::CookieManagerLayer::new())
+                .set_x_request_id(MakeRequestUuid)
+                .propagate_x_request_id()
+                .decompression()
+                .layer(filigree::auth::middleware::AuthLayer::new(auth_queries))
+                .into_inner(),
+        );
 
-    let server = builder.serve(app.into_make_service());
-    let actual_addr = server.local_addr();
+    let api_routes: Router<()> = api_routes.with_state(state.clone());
+
+    let app = Router::new().nest("/api", api_routes);
+
+    let listener = match config.bind {
+        ServerBind::Listener(l) => l,
+        ServerBind::HostPort(host, port) => create_tcp_listener(&host, port).await?,
+    };
+
+    let actual_addr = listener.local_addr().change_context(Error::ServerStart)?;
     let port = actual_addr.port();
-    event!(Level::INFO, "Listening on {}:{port}", config.host);
+    let host = actual_addr.ip().to_string();
+    event!(Level::INFO, "Listening on {host}:{port}");
 
     Ok(Server {
-        host: config.host,
+        host,
         port,
-        server,
+        app,
         state,
+        listener,
     })
 }

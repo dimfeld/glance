@@ -1,5 +1,6 @@
 use std::{path::Path, sync::Arc};
 
+use clap::{Args, Subcommand};
 use effectum::Queue;
 use error_stack::{Report, ResultExt};
 use glance_app::{AppData, AppItemData, Notification};
@@ -12,10 +13,45 @@ use sqlx::{
 use tracing::instrument;
 
 use crate::{
-    error::Error,
     items::{AppInfo, AppItems, Item},
     scheduled_task::ScheduledJobData,
+    Error,
 };
+
+pub async fn run_migrations(db: &PgPool) -> Result<(), Report<Error>> {
+    sqlx::migrate!().run(db).await.change_context(Error::Db)
+}
+
+#[derive(Args, Debug)]
+pub struct DbCommand {
+    /// The PostgreSQL database to connect to
+    #[clap(long = "db", env = "GLANCE_DATABASE_URL")]
+    database_url: String,
+
+    #[clap(subcommand)]
+    pub command: DbSubcommand,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DbSubcommand {
+    // TODO bootstrap DB command
+    /// Update the database with the latest migrations
+    Migrate,
+}
+
+impl DbCommand {
+    pub async fn handle(self) -> Result<(), Report<Error>> {
+        let pg_pool = sqlx::PgPool::connect(&self.database_url)
+            .await
+            .change_context(Error::Db)?;
+
+        match self.command {
+            DbSubcommand::Migrate => run_migrations(&pg_pool).await?,
+        }
+
+        Ok(())
+    }
+}
 
 /// The database for the glance platform
 pub struct DbInner {
@@ -51,15 +87,7 @@ pub enum EventType {
 
 impl DbInner {
     /// Create a new database connection and run migrations if needed.
-    pub async fn new(database_url: &str, data_dir: &Path) -> Result<Self, Report<Error>> {
-        let pool = PgPool::connect(database_url)
-            .await
-            .change_context(Error::DbInit)?;
-        sqlx::migrate!()
-            .run(&pool)
-            .await
-            .change_context(Error::DbInit)?;
-
+    pub async fn new(pool: PgPool, data_dir: &Path) -> Result<Self, Report<Error>> {
         let task_queue = Queue::new(&data_dir.join("glance_tasks.db"))
             .await
             .change_context(Error::DbInit)?;

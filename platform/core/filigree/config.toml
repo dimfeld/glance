@@ -1,0 +1,25 @@
+product_name = "Glance"
+company_name = "Daniel Imfeld"
+
+web_dir = "../web"
+default_auth_scope = "model"
+
+[server]
+default_port = 6749
+dotenv = true
+env_prefix = "GLANCE_"
+hosts = ["localhost"]
+
+[formatter]
+rust = ["rustfmt", "+nightly"]
+sql = ["pg_format"]
+
+[database]
+migrate_on_start = true
+
+[email]
+provider = "none"
+from = "support@example.com"
+
+[users]
+allow_public_signup = false
