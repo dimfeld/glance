@@ -1,5 +1,5 @@
 [model]
 #model = "gpt-3.5-turbo-1106"
-model = "openhermes"
+# model = "openhermes"
 
-# model = { host = "together", model = "teknium/OpenHermes-2p5-Mistral-7B" }
+model = { host = "together", model = "teknium/OpenHermes-2p5-Mistral-7B" }

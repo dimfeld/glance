@@ -152,6 +152,7 @@ async function fetchAndProcessStory(itemId: number, cached?: DataItem): Promise<
   let pageSummary = cached?.pageSummary ?? '';
   if (!pageContents && info.url) {
     try {
+      console.log(`Fetching ${itemId}: ${info.url}`);
       const res = await ky(info.url);
       pageContents = await res.text();
       if (res.headers.get('content-type')?.includes('text/html')) {
@@ -165,6 +166,7 @@ async function fetchAndProcessStory(itemId: number, cached?: DataItem): Promise<
 
   if (pageContents && !pageSummary) {
     try {
+      console.log(`Summarizing ${itemId}: ${info.url}`);
       pageSummary = await summarizePage(info.title, pageContents, cached);
     } catch (e) {
       console.error(itemId, e);
@@ -173,6 +175,7 @@ async function fetchAndProcessStory(itemId: number, cached?: DataItem): Promise<
 
   console.log('summary', pageSummary);
 
+  console.log(`Fetching comments for ${itemId}`);
   const comments = parseHTMLComments(hnText);
   let commentSummary = await summarizeComments(info.title, comments, cached);
 
