@@ -6,7 +6,7 @@ use super::ServerState;
 use crate::error::Error;
 
 async fn get_active_items(State(state): State<ServerState>) -> Result<impl IntoResponse, Error> {
-    let items = state.db.read_active_items().await?;
+    let items = state.orm.read_active_items().await?;
     Ok(Json(items))
 }
 
@@ -21,7 +21,10 @@ async fn dismiss_item(
     DismissItemPath { app_id, item_id }: DismissItemPath,
     State(state): State<ServerState>,
 ) -> Result<impl IntoResponse, Error> {
-    state.db.set_item_dismissed(&app_id, &item_id, true).await?;
+    state
+        .orm
+        .set_item_dismissed(&app_id, &item_id, true)
+        .await?;
     Ok(())
 }
 
@@ -37,7 +40,7 @@ async fn undismiss_item(
     State(state): State<ServerState>,
 ) -> Result<impl IntoResponse, Error> {
     state
-        .db
+        .orm
         .set_item_dismissed(&app_id, &item_id, false)
         .await?;
     Ok(())
