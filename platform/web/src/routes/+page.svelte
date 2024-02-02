@@ -78,7 +78,7 @@
   <div class="flex flex-col gap-8">
     {#each apps as { app, items } (app.id)}
       <section>
-        <h2 class="text-surface-content/75 mb-4 text-xl font-medium">{app.name}</h2>
+        <h2 class="mb-4 text-xl font-medium text-surface-content/75">{app.name}</h2>
         <div class="flex flex-col gap-8">
           {#each items as { id, dismissed, persistent, data } (id)}
             <article>
@@ -97,7 +97,7 @@
                       </h2>
                     {/if}
                     {#if data.subtitle}
-                      <div class="text-surface-content/50 text-sm">
+                      <div class="text-sm text-surface-content/50">
                         {data.subtitle}
                       </div>
                     {/if}
