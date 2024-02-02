@@ -62,6 +62,10 @@ pub struct PlatformOptions {
     pub base_dir: Option<PathBuf>,
     /// The database pool
     pub db: PgPool,
+    /// true to enable running scheduled tasks
+    /// Schedule task configuration will still be updated when this is disabled; this only
+    /// controls instantiation of the queue worker.
+    pub enable_scheduled_tasks: bool,
 }
 
 /// The platform data
@@ -71,7 +75,7 @@ pub struct Platform {
     change_handler: tokio::task::JoinHandle<()>,
     /// The database for the platform
     pub db: Db,
-    scheduled_task_runner: effectum::Worker,
+    scheduled_task_runner: Option<effectum::Worker>,
 }
 
 impl Platform {
@@ -88,9 +92,15 @@ impl Platform {
 
         let log_dir = base_dir.join("logs");
         std::fs::create_dir_all(&log_dir).expect("creating logs directory");
-        let scheduled_task_runner = create_scheduled_task_runner(db.clone(), log_dir)
-            .await
-            .change_context(Error::TaskQueue)?;
+
+        let scheduled_task_runner = if config.enable_scheduled_tasks {
+            let runner = create_scheduled_task_runner(db.clone(), log_dir)
+                .await
+                .change_context(Error::TaskQueue)?;
+            Some(runner)
+        } else {
+            None
+        };
 
         let change_handler =
             tokio::task::spawn(handle_changes::handle_changes(db.clone(), change_rx));
@@ -118,10 +128,12 @@ impl Platform {
         event!(Level::DEBUG, "Shutting down change handler");
         change_handler.await.ok();
         event!(Level::DEBUG, "Shutting down scheduled task runner");
-        scheduled_task_runner
-            .unregister(Some(std::time::Duration::from_secs(10)))
-            .await
-            .ok();
+        if let Some(runner) = scheduled_task_runner {
+            runner
+                .unregister(Some(std::time::Duration::from_secs(10)))
+                .await
+                .ok();
+        }
         db.task_queue
             .close(std::time::Duration::from_secs(10))
             .await

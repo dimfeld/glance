@@ -45,6 +45,9 @@ struct ServeCommand {
     #[clap(long = "env", env = "GLANCE_ENV", default_value_t = String::from("development"))]
     env: String,
 
+    #[clap(env = "GLANCE_ENABLE_SCHEDULED_TASKS", default_value_t = false)]
+    enable_scheduled_tasks: bool,
+
     /// Request timeout, in seconds
     #[clap(long, env = "GLANCE_REQUEST_TIMEOUT", default_value_t = 60)]
     request_timeout: u64,
@@ -171,6 +174,7 @@ async fn serve(cmd: ServeCommand) -> Result<(), Report<Error>> {
     let platform = Platform::new(PlatformOptions {
         base_dir: cmd.base_dir,
         db: pg_pool.clone(),
+        enable_scheduled_tasks: cmd.enable_scheduled_tasks,
     })
     .await?;
 
