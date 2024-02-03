@@ -1,61 +1,52 @@
 <script lang="ts">
-  import SideLabelled from '$lib/components/SideLabelled.svelte';
-  // import * as Card from '$lib/components/ui/card';
-  // import Switch from '$lib/components/ui/switch/switch.svelte';
-  // import { Button } from '$lib/components/ui/button';
   import { mdiEmailOutline, mdiEmailOpenOutline } from '@mdi/js';
   import { enhance } from '$app/forms';
   import { onDestroy, onMount } from 'svelte';
   import { invalidateAll } from '$app/navigation';
   import { browser } from '$app/environment';
-  import { Button, Card, Switch, getSettings } from 'svelte-ux';
+  import { Button, Card, Switch, ThemeSwitch, getSettings } from 'svelte-ux';
   import DarkModeSwitch from '$lib/components/DarkModeSwitch.svelte';
 
-  export let data;
+  const { data } = $props();
 
   let showDismissed = false;
 
-  const { currentTheme } = getSettings();
+  let apps = $derived(
+    data.apps
+      .map((app) => {
+        return {
+          ...app,
+          items: app.items.filter((item) => showDismissed || !item.dismissed),
+        };
+      })
+      .filter((app) => app.items.length > 0)
+  );
 
-  $: apps = data.apps
-    .map((app) => {
-      return {
-        ...app,
-        items: app.items.filter((item) => showDismissed || !item.dismissed),
-      };
-    })
-    .filter((app) => app.items.length > 0);
-
-  let canRefresh = browser ? document.visibilityState === 'visible' : false;
-  let lastRefresh = Date.now();
-  let refreshTimer: number | null = null;
+  let canRefresh = $state(browser ? document.visibilityState === 'visible' : false);
+  let lastRefresh = $state(Date.now());
+  let refreshTimer: ReturnType<typeof setTimeout> | null = $state(null);
   const REFRESH_TIME = 15 * 60 * 1000;
 
   function doRefresh() {
     refreshTimer = null;
     lastRefresh = Date.now();
     invalidateAll();
-
-    if (canRefresh) {
-      setRefreshTimer();
-    }
   }
 
   function setRefreshTimer() {
-    console.trace('setRefreshTimer');
     const timeSinceRefresh = Date.now() - lastRefresh;
     const time = Math.max(0, REFRESH_TIME - timeSinceRefresh);
     refreshTimer = setTimeout(doRefresh, time);
   }
 
-  $: if (browser) {
+  $effect(() => {
     if (canRefresh && !refreshTimer) {
       setRefreshTimer();
     } else if (refreshTimer && !canRefresh) {
       clearTimeout(refreshTimer);
       refreshTimer = null;
     }
-  }
+  });
 
   onDestroy(() => {
     if (browser && refreshTimer) {
@@ -69,7 +60,7 @@
 
 <main class="m-4">
   <header class="flex w-full justify-end gap-4">
-    <DarkModeSwitch />
+    <ThemeSwitch />
     <label class="flex items-center gap-2" for="show-dismissed-switch">
       <Switch id="show-dismissed-switch" bind:checked={showDismissed} />
       Show dismissed

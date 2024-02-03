@@ -4,7 +4,7 @@
 
   const { currentTheme } = getSettings();
 
-  $: dark = $currentTheme.dark;
+  let dark = $derived($currentTheme.dark);
 
   function toggleDark() {
     currentTheme.setTheme(dark ? 'light' : 'dark');
@@ -19,7 +19,7 @@
   on:click={toggleDark}
 >
   <div
-    class="ls-button bg-surface-100 relative grid h-6 w-6 transform grid-cols-1 grid-rows-1 place-items-center transition-transform duration-300 dark:translate-x-5"
+    class="ls-button relative grid h-6 w-6 transform grid-cols-1 grid-rows-1 place-items-center bg-surface-100 transition-transform duration-300 dark:translate-x-5"
   >
     <Icon
       classes={{
