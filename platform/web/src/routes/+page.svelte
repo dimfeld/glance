@@ -6,12 +6,13 @@
   import { mdiEmailOutline, mdiEmailOpenOutline } from '@mdi/js';
   import { enhance } from '$app/forms';
   import { onDestroy, onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { invalidateAll } from '$app/navigation';
   import { browser } from '$app/environment';
-  import { Button, Card, Switch, getSettings } from 'svelte-ux';
-  import DarkModeSwitch from '$lib/components/DarkModeSwitch.svelte';
+  import { Button, Card, Switch, ThemeSwitch, getSettings } from 'svelte-ux';
 
   export let data;
+  $page.data.user;
 
   let showDismissed = false;
 
@@ -28,7 +29,7 @@
 
   let canRefresh = browser ? document.visibilityState === 'visible' : false;
   let lastRefresh = Date.now();
-  let refreshTimer: number | null = null;
+  let refreshTimer: ReturnType<typeof setTimeout> | null = null;
   const REFRESH_TIME = 15 * 60 * 1000;
 
   function doRefresh() {
@@ -63,17 +64,26 @@
       refreshTimer = null;
     }
   });
+
+  $: showLogin = Boolean($page.data.user || $page.url.searchParams.get('showLogin'));
 </script>
 
 <svelte:window on:visibilitychange={() => (canRefresh = document.visibilityState === 'visible')} />
 
 <main class="m-4">
   <header class="flex w-full justify-end gap-4">
-    <DarkModeSwitch />
+    <ThemeSwitch />
     <label class="flex items-center gap-2" for="show-dismissed-switch">
       <Switch id="show-dismissed-switch" bind:checked={showDismissed} />
       Show dismissed
     </label>
+    {#if showLogin}
+      {#if $page.data.user}
+        <a href="/logout">Logout</a>
+      {:else}
+        <a href="/login">Login</a>
+      {/if}
+    {/if}
   </header>
   <div class="flex flex-col gap-8">
     {#each apps as { app, items } (app.id)}

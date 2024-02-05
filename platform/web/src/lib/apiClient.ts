@@ -1,25 +1,11 @@
-import ky, { type Options } from 'ky';
+import { client } from 'filigree-web';
 import type { AppData, AppItem } from 'glance-app';
-
-const localApiUrl = '/api';
-
-export interface ApiClientExtraOptions {
-  current?: URL | { url: URL };
-}
-
-export function apiClient(url: string, options: Options & ApiClientExtraOptions = {}) {
-  let current =
-    options.current && 'origin' in options.current ? options.current : options.current?.url;
-  let origin = current?.origin;
-  let prefix = new URL(localApiUrl, origin);
-
-  return ky(url, {
-    prefixUrl: prefix,
-    ...options,
-  });
-}
 
 export interface ActiveItems {
   app: AppData & { id: string };
   items: (AppItem & { dismissed: boolean })[];
 }
+
+export const apiClient = client.extend({
+  prefixUrl: '/api',
+});

@@ -1,7 +1,7 @@
 import { apiClient } from '$lib/apiClient.js';
 
 export const actions = {
-  toggle_dismissed: async ({ request, url }) => {
+  toggle_dismissed: async ({ request, fetch }) => {
     const form = await request.formData();
     const app_id = form.get('app_id');
     const item_id = form.get('item_id');
@@ -10,9 +10,10 @@ export const actions = {
     const targetState = !dismissed;
     const action = targetState ? 'dismiss' : 'undismiss';
 
-    await apiClient(`apps/${app_id}/items/${item_id}/${action}`, {
-      current: url,
+    await apiClient({
+      url: `apps/${app_id}/items/${item_id}/${action}`,
       method: 'POST',
+      fetch,
     });
   },
 };
