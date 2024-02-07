@@ -1,6 +1,7 @@
 <script lang="ts">
   import { manageForm } from 'filigree-web';
   import { Button, TextField } from 'svelte-ux';
+  import OAuthLoginButton from '$lib/components/OAuthLoginButton.svelte';
 
   export let data;
   export let form;
@@ -15,3 +16,7 @@
   <TextField labelPlacement="top" name="password" label="Password" type="password" />
   <Button type="submit">Login</Button>
 </form>
+
+<OAuthLoginButton provider="github" name="GitHub" />
+<OAuthLoginButton provider="twitter" name="Twitter" />
+<OAuthLoginButton provider="google" name="Google" />

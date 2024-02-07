@@ -1,8 +1,4 @@
 <script lang="ts">
-  import SideLabelled from '$lib/components/SideLabelled.svelte';
-  // import * as Card from '$lib/components/ui/card';
-  // import Switch from '$lib/components/ui/switch/switch.svelte';
-  // import { Button } from '$lib/components/ui/button';
   import { mdiEmailOutline, mdiEmailOpenOutline } from '@mdi/js';
   import { enhance } from '$app/forms';
   import { onDestroy, onMount } from 'svelte';
