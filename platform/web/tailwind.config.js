@@ -23,7 +23,7 @@ const config = {
       },
 
       dark: {
-        primary: 'hsl(35 93% 55%)',
+        primary: 'hsl(35 93% 45%)',
         'primary-content': 'hsl(35 9.3% 5.5%)',
 
         secondary: 'hsl(35 53.94% 20.35%)',

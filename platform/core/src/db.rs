@@ -34,7 +34,8 @@ pub struct DbCommand {
 
 #[derive(Debug, Subcommand)]
 pub enum DbSubcommand {
-    // TODO bootstrap DB command
+    /// Create the initial set of data in the database.
+    Bootstrap,
     /// Update the database with the latest migrations
     Migrate,
 }
@@ -46,6 +47,9 @@ impl DbCommand {
             .change_context(Error::Db)?;
 
         match self.command {
+            DbSubcommand::Bootstrap => {
+                todo!()
+            }
             DbSubcommand::Migrate => run_migrations(&pg_pool).await?,
         }
 

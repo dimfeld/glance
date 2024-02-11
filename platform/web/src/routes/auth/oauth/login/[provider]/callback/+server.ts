@@ -8,6 +8,7 @@ export const GET: RequestHandler = async ({ url, params, fetch }) => {
     url: `/api/auth/oauth/login/${provider}/callback`,
     fetch,
     query: url.searchParams,
+    tolerateFailure: true,
   });
 
   let message: string;

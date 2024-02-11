@@ -8,7 +8,6 @@ default_auth_scope = "model"
 default_port = 6749
 dotenv = true
 env_prefix = "GLANCE_"
-hosts = ["localhost"]
 
 [formatter]
 rust = ["rustfmt", "+nightly"]
