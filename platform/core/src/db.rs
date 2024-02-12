@@ -101,6 +101,8 @@ pub async fn bootstrap(db: PgPool, data: BootstrapData) -> Result<bool, Report<E
     .await
     .change_context(Error::Db)?;
 
+    tx.commit().await.change_context(Error::Db)?;
+
     Ok(true)
 }
 

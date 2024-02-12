@@ -7,6 +7,7 @@ use axum::{
 };
 use axum_extra::extract::Query;
 use axum_jsonschema::Json;
+use filigree::extract::FormOrJson;
 
 use super::{
     queries, types::*, RoleId, CREATE_PERMISSION, OWNER_PERMISSION, READ_PERMISSION,
@@ -39,7 +40,7 @@ async fn list(
 async fn create(
     State(state): State<ServerState>,
     auth: Authed,
-    Json(payload): Json<RoleCreatePayload>,
+    FormOrJson(payload): FormOrJson<RoleCreatePayload>,
 ) -> Result<impl IntoResponse, Error> {
     let result = queries::create(&state.db, &auth, &payload).await?;
 
@@ -50,7 +51,7 @@ async fn update(
     State(state): State<ServerState>,
     auth: Authed,
     Path(id): Path<RoleId>,
-    Json(payload): Json<RoleUpdatePayload>,
+    FormOrJson(payload): FormOrJson<RoleUpdatePayload>,
 ) -> Result<impl IntoResponse, Error> {
     let updated = queries::update(&state.db, &auth, id, &payload).await?;
     let status = if updated {
