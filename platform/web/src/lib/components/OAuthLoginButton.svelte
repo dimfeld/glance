@@ -25,7 +25,6 @@
       window.addEventListener('message', function handler(event) {
         loginWindow.close();
         window.removeEventListener('message', handler);
-        console.dir(event);
 
         let data = event.data;
         if (data.success) {

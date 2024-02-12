@@ -77,8 +77,8 @@ devDependencies:
     specifier: ^3.6.3
     version: 3.6.3(postcss-load-config@4.0.2)(postcss@8.4.33)(svelte@5.0.0-next.52)
   svelte-ux:
-    specifier: file:../../../svelte-ux/packages/svelte-ux
-    version: file:../../../svelte-ux/packages/svelte-ux(postcss-load-config@4.0.2)(postcss@8.4.33)(svelte@5.0.0-next.52)
+    specifier: 0.60.0
+    version: 0.60.0(postcss-load-config@4.0.2)(postcss@8.4.33)(svelte@5.0.0-next.52)
   tailwindcss:
     specifier: ^3.4.1
     version: 3.4.1
@@ -367,8 +367,8 @@ packages:
       '@floating-ui/utils': 0.2.1
     dev: true
 
-  /@floating-ui/dom@1.6.1:
-    resolution: {integrity: sha512-iA8qE43/H5iGozC3W0YSnVSW42Vh522yyM1gj+BqRwVsTNOyr231PsXDaV04yT39PsO0QL2QpbI/M0ZaLUQgRQ==}
+  /@floating-ui/dom@1.6.2:
+    resolution: {integrity: sha512-xymkSSowKdGqo0SRr2Mp4czH5A8o2Pum35PAD0ftb3gCcPacWzwhvtUeUqmVXm9EVtm2hThD/lRrFNcahMOaSQ==}
     dependencies:
       '@floating-ui/core': 1.6.0
       '@floating-ui/utils': 0.2.1
@@ -710,8 +710,8 @@ packages:
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
     dev: true
 
-  /@types/node@20.11.16:
-    resolution: {integrity: sha512-gKb0enTmRCzXSSUJDq6/sPcqrfCv2mkkG6Jt/clpn5eiCbKTY+SgZUxo+p8ZKMof5dCp9vHQUAB7wOUTod22wQ==}
+  /@types/node@20.11.17:
+    resolution: {integrity: sha512-QmgQZGWu1Yw9TDyAP9ZzpFJKynYNeOvwMJmaxABfieQoVoiVOS6MN1WSpqpRcbeA5+RW82kraAVxCCJg+780Qw==}
     dependencies:
       undici-types: 5.26.5
     dev: true
@@ -723,7 +723,7 @@ packages:
   /@types/resolve@1.17.1:
     resolution: {integrity: sha512-yy7HuzQhj0dhGpD8RLXSZWEkLsV9ibvxvi6EiJ3bkqLAO1RGo0WbkWQiwpRlSFymTJRz0d3k5LM3kkx8ArDbLw==}
     dependencies:
-      '@types/node': 20.11.16
+      '@types/node': 20.11.17
     dev: true
 
   /@types/semver@7.5.6:
@@ -2284,7 +2284,7 @@ packages:
       glob: 7.2.3
     dev: true
 
-  /rollup-plugin-svelte@7.1.6(rollup@2.79.1)(svelte@4.2.9):
+  /rollup-plugin-svelte@7.1.6(rollup@2.79.1)(svelte@4.2.10):
     resolution: {integrity: sha512-nVFRBpGWI2qUY1OcSiEEA/kjCY2+vAjO9BI8SzA7NRrh2GTunLd6w2EYmnMt/atgdg8GvcNjLsmZmbQs/u4SQA==}
     engines: {node: '>=10'}
     peerDependencies:
@@ -2294,7 +2294,7 @@ packages:
       '@rollup/pluginutils': 4.2.1
       resolve.exports: 2.0.2
       rollup: 2.79.1
-      svelte: 4.2.9
+      svelte: 4.2.10
     dev: true
 
   /rollup@2.79.1:
@@ -2481,9 +2481,9 @@ packages:
       fast-glob: 3.3.2
       prettier: 2.8.8
       rollup: 2.79.1
-      rollup-plugin-svelte: 7.1.6(rollup@2.79.1)(svelte@4.2.9)
-      svelte: 4.2.9
-      svelte-preprocess: 5.1.3(postcss-load-config@4.0.2)(postcss@8.4.33)(svelte@4.2.9)(typescript@5.3.3)
+      rollup-plugin-svelte: 7.1.6(rollup@2.79.1)(svelte@4.2.10)
+      svelte: 4.2.10
+      svelte-preprocess: 5.1.3(postcss-load-config@4.0.2)(postcss@8.4.33)(svelte@4.2.10)(typescript@5.3.3)
       typescript: 5.3.3
     transitivePeerDependencies:
       - '@babel/core'
@@ -2550,7 +2550,7 @@ packages:
       svelte: 5.0.0-next.52
     dev: true
 
-  /svelte-preprocess@5.1.3(postcss-load-config@4.0.2)(postcss@8.4.33)(svelte@4.2.9)(typescript@5.3.3):
+  /svelte-preprocess@5.1.3(postcss-load-config@4.0.2)(postcss@8.4.33)(svelte@4.2.10)(typescript@5.3.3):
     resolution: {integrity: sha512-xxAkmxGHT+J/GourS5mVJeOXZzne1FR5ljeOUAMXUkfEhkLEllRreXpbl3dIYJlcJRfL1LO1uIAPpBpBfiqGPw==}
     engines: {node: '>= 16.0.0', pnpm: ^8.0.0}
     requiresBuild: true
@@ -2595,7 +2595,7 @@ packages:
       postcss-load-config: 4.0.2(postcss@8.4.33)
       sorcery: 0.11.0
       strip-indent: 3.0.0
-      svelte: 4.2.9
+      svelte: 4.2.10
       typescript: 5.3.3
     dev: true
 
@@ -2648,8 +2648,42 @@ packages:
       typescript: 5.3.3
     dev: true
 
-  /svelte@4.2.9:
-    resolution: {integrity: sha512-hsoB/WZGEPFXeRRLPhPrbRz67PhP6sqYgvwcAs+gWdSQSvNDw+/lTeUJSWe5h2xC97Fz/8QxAOqItwBzNJPU8w==}
+  /svelte-ux@0.60.0(postcss-load-config@4.0.2)(postcss@8.4.33)(svelte@5.0.0-next.52):
+    resolution: {integrity: sha512-mqNEt6N6g3aVhn72UVbo4FsHpvU142KJfrmT1WeoeRNI4pE3PI7BGtdZkcUnRRjxH8vlZINDwQ0naQ5sj7jtsw==}
+    peerDependencies:
+      svelte: ^3.56.0 || ^4.0.0
+    dependencies:
+      '@floating-ui/dom': 1.6.2
+      '@fortawesome/fontawesome-common-types': 6.5.1
+      '@mdi/js': 7.4.47
+      clsx: 2.1.0
+      culori: 3.3.0
+      d3-array: 3.2.4
+      d3-scale: 4.0.2
+      date-fns: 3.3.1
+      immer: 10.0.3
+      lodash-es: 4.17.21
+      prism-svelte: 0.5.0
+      prism-themes: 1.9.0
+      prismjs: 1.29.0
+      sveld: 0.19.1(postcss-load-config@4.0.2)(postcss@8.4.33)
+      svelte: 5.0.0-next.52
+      tailwind-merge: 2.2.1
+      zod: 3.22.4
+    transitivePeerDependencies:
+      - '@babel/core'
+      - coffeescript
+      - less
+      - postcss
+      - postcss-load-config
+      - pug
+      - sass
+      - stylus
+      - sugarss
+    dev: true
+
+  /svelte@4.2.10:
+    resolution: {integrity: sha512-Ep06yCaCdgG1Mafb/Rx8sJ1QS3RW2I2BxGp2Ui9LBHSZ2/tO/aGLc5WqPjgiAP6KAnLJGaIr/zzwQlOo1b8MxA==}
     engines: {node: '>=16'}
     dependencies:
       '@ampproject/remapping': 2.2.1
@@ -2938,42 +2972,6 @@ packages:
       ajv: 8.12.0
       sorters: 1.1.0
       svelte: 5.0.0-next.52
-    dev: true
-
-  file:../../../svelte-ux/packages/svelte-ux(postcss-load-config@4.0.2)(postcss@8.4.33)(svelte@5.0.0-next.52):
-    resolution: {directory: ../../../svelte-ux/packages/svelte-ux, type: directory}
-    id: file:../../../svelte-ux/packages/svelte-ux
-    name: svelte-ux
-    peerDependencies:
-      svelte: ^3.56.0 || ^4.0.0
-    dependencies:
-      '@floating-ui/dom': 1.6.1
-      '@fortawesome/fontawesome-common-types': 6.5.1
-      '@mdi/js': 7.4.47
-      clsx: 2.1.0
-      culori: 3.3.0
-      d3-array: 3.2.4
-      d3-scale: 4.0.2
-      date-fns: 3.3.1
-      immer: 10.0.3
-      lodash-es: 4.17.21
-      prism-svelte: 0.5.0
-      prism-themes: 1.9.0
-      prismjs: 1.29.0
-      sveld: 0.19.1(postcss-load-config@4.0.2)(postcss@8.4.33)
-      svelte: 5.0.0-next.52
-      tailwind-merge: 2.2.1
-      zod: 3.22.4
-    transitivePeerDependencies:
-      - '@babel/core'
-      - coffeescript
-      - less
-      - postcss
-      - postcss-load-config
-      - pug
-      - sass
-      - stylus
-      - sugarss
     dev: true
 
   file:../app-js:

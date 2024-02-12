@@ -17,7 +17,11 @@ export const actions = {
     }
 
     if (response.status === 400 || response.status === 401) {
-      fail(response.status, (await response.json()) satisfies ActionResponse);
+      const body = await response.json();
+      if (body.form) {
+        delete body.form.password;
+      }
+      return fail(response.status, body satisfies ActionResponse);
     } else {
       error(response.status, {});
     }
@@ -44,9 +48,9 @@ function getOauthEnabledFlag(varName: string) {
 }
 
 const oauthEnabled = {
-  github: getOauthEnabledFlag('OAUTH_GITHUB_CLIENT_ID'),
-  twitter: getOauthEnabledFlag('OAUTH_TWITTER_CLIENT_ID'),
-  google: getOauthEnabledFlag('OAUTH_GOOGLE_CLIENT_ID'),
+  github: getOauthEnabledFlag('GLANCE_OAUTH_GITHUB_CLIENT_ID'),
+  twitter: getOauthEnabledFlag('GLANCE_OAUTH_TWITTER_CLIENT_ID'),
+  google: getOauthEnabledFlag('GLANCE_OAUTH_GOOGLE_CLIENT_ID'),
 };
 
 export const load = () => {

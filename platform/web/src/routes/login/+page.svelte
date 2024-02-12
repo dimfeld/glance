@@ -17,7 +17,7 @@
     },
   });
 
-  let { errors, message, loading, formData, slowLoading } = $derived(formManager);
+  let { errors, fieldErrors, message, loading, formData, slowLoading } = $derived(formManager);
   let { enhance } = formManager;
   function handleMessage(m: string) {
     formManager.message = m;
@@ -36,12 +36,19 @@
       name="redirect_to"
       value={$page.url.searchParams.get('redirectTo') || '/'}
     />
-    <TextField labelPlacement="top" name="email" label="Email" bind:value={formData.email} />
+    <TextField
+      labelPlacement="top"
+      name="email"
+      label="Email"
+      bind:value={formData.email}
+      error={fieldErrors.email}
+    />
     <TextField
       labelPlacement="top"
       name="password"
       label="Password"
       type="password"
+      error={fieldErrors.password}
       bind:value={formData.password}
     />
     <Button variant="fill" color="primary" type="submit">
@@ -52,8 +59,8 @@
       {/if}
     </Button>
     <p class="text-sm">
-      {#if message}
-        {message}
+      {#if message || errors?.messages?.length}
+        {errors?.messages?.[0] || message}
       {:else}
         Type a password, or leave it blank to receive an email with a login link.
       {/if}
