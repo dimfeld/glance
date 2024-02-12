@@ -18,7 +18,7 @@ setup-db:
 
 dev-api:
   cd ../filigree/filigree-cli && cargo build
-  cd platform/core && ../../../filigree/target/debug/filigree && GLANCE_LOG=trace cargo run --release -- serve
+  cd platform/core && ../../../filigree/target/debug/filigree && GLANCE_LOG=debug cargo run --release -- serve
 
 dev-web:
   cd ../filigree/web && pnpm package

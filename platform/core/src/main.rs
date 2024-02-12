@@ -7,7 +7,7 @@ use filigree::{
     auth::{CorsSetting, SameSiteArg, SessionCookieBuilder},
     tracing_config::{configure_tracing, teardown_tracing, TracingExportConfig},
 };
-use glance_core::{db, emails, server, tracing_config, util_cmd, Error, Platform, PlatformOptions};
+use glance_core::{cmd, db, emails, server, tracing_config, Error, Platform, PlatformOptions};
 use tracing::{event, Level};
 
 #[derive(Parser)]
@@ -19,8 +19,8 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    Util(util_cmd::UtilCommand),
-    Db(db::DbCommand),
+    Util(cmd::util::UtilCommand),
+    Db(cmd::db::DbCommand),
     Serve(ServeCommand),
 }
 

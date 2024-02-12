@@ -1,7 +1,7 @@
 //! Glance platform core
 #![warn(missing_docs)]
 pub mod auth;
-/// Database implementation
+pub mod cmd;
 pub mod db;
 pub mod emails;
 /// Define errors
@@ -19,7 +19,6 @@ pub mod tests;
 /// Tracing setup
 pub mod tracing_config;
 pub mod users;
-pub mod util_cmd;
 
 use std::path::PathBuf;
 
