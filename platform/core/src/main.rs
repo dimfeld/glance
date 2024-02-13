@@ -71,15 +71,15 @@ struct ServeCommand {
     #[clap(long, env = "GLANCE_DB_MAX_CONNECTIONS", default_value_t = 100)]
     db_max_connections: u32,
     /// The email service to use
-    #[clap(env="GLANCE_EMAIL_SENDER_SERVICE", default_value_t = String::from("none"))]
+    #[clap(env="GLANCE_EMAIL_SENDER_SERVICE", default_value_t = String::from("resend"))]
     email_sender_service: String,
 
     /// The API token for the email sending service
-    #[clap(env="GLANCE_EMAIL_SENDER_API_TOKEN", default_value_t = String::from(""))]
+    #[clap(env = "GLANCE_EMAIL_SENDER_API_TOKEN")]
     email_sender_api_token: String,
 
     /// The email address to use as the default sender
-    #[clap(env="GLANCE_EMAIL_DEFAULT_FROM_ADDRESS", default_value_t = String::from("support@example.com"))]
+    #[clap(env="GLANCE_EMAIL_DEFAULT_FROM_ADDRESS", default_value_t = String::from("daniel@imfeld.dev"))]
     email_default_from_address: String,
 
     /// Allow users to sign up themselves

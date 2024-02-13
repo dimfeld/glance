@@ -4,7 +4,10 @@ use effectum::Queue;
 use error_stack::{Report, ResultExt};
 use filigree::{
     auth::password::HashedPassword,
-    users::roles::{add_permissions_to_role, add_roles_to_user},
+    users::{
+        roles::{add_permissions_to_role, add_roles_to_user},
+        users::add_user_email_login,
+    },
 };
 use glance_app::{AppData, AppItemData, Notification};
 use itertools::Itertools;
@@ -78,7 +81,7 @@ pub async fn bootstrap(db: PgPool, data: BootstrapData) -> Result<bool, Report<E
 
     let user_details = UserCreatePayload {
         name: data.admin_name.unwrap_or_else(|| "Admin".to_string()),
-        email: Some(data.admin_email),
+        email: Some(data.admin_email.clone()),
         ..Default::default()
     };
 
@@ -90,6 +93,11 @@ pub async fn bootstrap(db: PgPool, data: BootstrapData) -> Result<bool, Report<E
         data.admin_password,
     )
     .await?;
+
+    add_user_email_login(&mut *tx, admin_user_id, data.admin_email, true)
+        .await
+        .change_context(Error::Db)?;
+
     let superuser_role = create_superuser_role(&mut *tx, org.organization.id).await?;
 
     add_roles_to_user(

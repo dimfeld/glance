@@ -17,8 +17,8 @@ sql = ["pg_format"]
 migrate_on_start = true
 
 [email]
-provider = "none"
-from = "support@example.com"
+provider = "resend"
+from = "daniel@imfeld.dev"
 
 [users]
 allow_public_signup = false

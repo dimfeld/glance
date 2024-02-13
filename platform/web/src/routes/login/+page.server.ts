@@ -1,5 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import { type FormResponse, forwardToApi } from 'filigree-web';
+import { type FormResponse, forwardToApi, client } from 'filigree-web';
 import { env } from '$env/dynamic/private';
 
 interface ActionFormResponseData {
@@ -53,8 +53,38 @@ const oauthEnabled = {
   google: getOauthEnabledFlag('GLANCE_OAUTH_GOOGLE_CLIENT_ID'),
 };
 
-export const load = () => {
+export const load = async ({ fetch, url }) => {
+  let token = url.searchParams.get('token');
+
+  let message: string | undefined;
+  if (token) {
+    // User is trying to do a passwordless login.
+    interface PasswordlessLoginResult {
+      message: string;
+      redirect_to?: string;
+    }
+
+    // TODO improve ergonomics of making a call that might return an error. This probably involves some helper functions
+    // that automate some type inference
+    let res = await client({
+      url: '/api/auth/email_login',
+      method: 'GET',
+      query: url.searchParams,
+      fetch,
+      tolerateFailure: true,
+    });
+
+    if (res.ok) {
+      let body = (await res.json()) as PasswordlessLoginResult;
+      redirect(301, body.redirect_to ?? '/');
+    } else {
+      let response = await res.json();
+      message = response.error?.message ?? 'An error occurred';
+    }
+  }
+
   return {
     oauthEnabled,
+    message,
   };
 };
