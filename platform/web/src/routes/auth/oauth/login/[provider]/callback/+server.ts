@@ -1,5 +1,5 @@
 import type { RequestHandler } from '@sveltejs/kit';
-import { client, copyCookies } from 'filigree-web';
+import { client, cookiesToHeaders } from 'filigree-web';
 
 export const GET: RequestHandler = async ({ url, params, fetch }) => {
   const provider = params.provider;
@@ -22,7 +22,7 @@ export const GET: RequestHandler = async ({ url, params, fetch }) => {
     message = JSON.stringify({ error: response.statusText });
   }
 
-  let headers = copyCookies(response, {
+  let headers = cookiesToHeaders(response, {
     'Content-Type': 'text/html; charset=utf-8',
   });
 

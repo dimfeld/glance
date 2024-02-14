@@ -1,6 +1,6 @@
-import { error, fail, redirect } from '@sveltejs/kit';
-import { type FormResponse, forwardToApi, client } from 'filigree-web';
 import { env } from '$env/dynamic/private';
+import { error, fail, redirect } from '@sveltejs/kit';
+import { applyResponseCookies, client, forwardToApi, type FormResponse } from 'filigree-web';
 
 interface ActionFormResponseData {
   email: string;
@@ -28,7 +28,7 @@ export const actions = {
 
     return {
       form: { email: '' } as ActionFormResponseData,
-    } satisfies ActionResponse;
+    } as ActionResponse;
   },
   passwordless: async (event) => {
     const res = await forwardToApi('POST', 'auth/email_login', event, { tolerateFailure: true });
@@ -53,16 +53,17 @@ const oauthEnabled = {
   google: getOauthEnabledFlag('GLANCE_OAUTH_GOOGLE_CLIENT_ID'),
 };
 
-export const load = async ({ fetch, url }) => {
+interface PasswordlessLoginResult {
+  message: string;
+  redirect_to?: string;
+}
+
+export async function load({ fetch, url, cookies }) {
   let token = url.searchParams.get('token');
 
   let message: string | undefined;
   if (token) {
     // User is trying to do a passwordless login.
-    interface PasswordlessLoginResult {
-      message: string;
-      redirect_to?: string;
-    }
 
     // TODO improve ergonomics of making a call that might return an error. This probably involves some helper functions
     // that automate some type inference
@@ -74,9 +75,14 @@ export const load = async ({ fetch, url }) => {
       tolerateFailure: true,
     });
 
+    applyResponseCookies(res, cookies);
     if (res.ok) {
-      let body = (await res.json()) as PasswordlessLoginResult;
-      redirect(301, body.redirect_to ?? '/');
+      let successBody = (await res.json()) as PasswordlessLoginResult;
+      return {
+        oauthEnabled,
+        logInSuccess: true,
+        ...successBody,
+      };
     } else {
       let response = await res.json();
       message = response.error?.message ?? 'An error occurred';
@@ -87,4 +93,4 @@ export const load = async ({ fetch, url }) => {
     oauthEnabled,
     message,
   };
-};
+}
