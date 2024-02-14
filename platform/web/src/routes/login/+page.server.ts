@@ -1,37 +1,41 @@
 import { env } from '$env/dynamic/private';
 import { error, fail, redirect } from '@sveltejs/kit';
-import { applyResponseCookies, client, forwardToApi, type FormResponse } from 'filigree-web';
+import {
+  applyResponseCookies,
+  client,
+  forwardToApi,
+  isExtractedResponse,
+  handleFormResponse,
+  type FormResponse,
+} from 'filigree-web';
 
 interface ActionFormResponseData {
   email: string;
   password?: string;
 }
-type ActionResponse = FormResponse<ActionFormResponseData>;
-
 export const actions = {
   login: async (event) => {
     let response = await forwardToApi('POST', 'auth/login', event, { tolerateFailure: true });
+
+    applyResponseCookies(response, event.cookies);
 
     if (response.ok) {
       redirect(301, '/');
     }
 
-    if (response.status === 400 || response.status === 401) {
-      const body = await response.json();
-      if (body.form) {
-        delete body.form.password;
-      }
-      return fail(response.status, body satisfies ActionResponse);
-    } else {
-      error(response.status, {});
+    const result = await handleFormResponse<ActionFormResponseData>(response, [400, 401]);
+    if (isExtractedResponse(result)) {
+      // We probably should never hit this since we already checked `response.ok` above.
+      return result.body;
     }
 
-    return {
-      form: { email: '' } as ActionFormResponseData,
-    } as ActionResponse;
+    if (result.data.form) {
+      delete result.data.form.password;
+    }
+    return result;
   },
   passwordless: async (event) => {
-    const res = await forwardToApi('POST', 'auth/email_login', event, { tolerateFailure: true });
+    const res = await forwardToApi('POST', 'auth/email_login', event);
     if (!res.ok) {
       const data = await res.json();
       error(500, data);
@@ -65,8 +69,6 @@ export async function load({ fetch, url, cookies }) {
   if (token) {
     // User is trying to do a passwordless login.
 
-    // TODO improve ergonomics of making a call that might return an error. This probably involves some helper functions
-    // that automate some type inference
     let res = await client({
       url: '/api/auth/email_login',
       method: 'GET',
