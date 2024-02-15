@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import { browser } from '$app/environment';
+  import { goto, invalidateAll } from '$app/navigation';
   import { page } from '$app/stores';
   import OAuthLoginButton from '$lib/components/OAuthLoginButton.svelte';
   import { manageForm } from 'filigree-web';
@@ -7,15 +8,21 @@
 
   const { data, form } = $props();
 
+  let topMessage = $state(data.message);
+  $effect(() => {
+    topMessage = data.message;
+  });
+
   let formManager = manageForm({
     form,
     onSubmit() {
-      data.message = '';
+      topMessage = '';
     },
     onSuccess(result) {
       // Redirect means we logged in with a password, so we want to fetch the user again.
       // Normal success means passwordless login, and so we aren't actually logged in yet.
       return {
+        resetForm: false,
         invalidateAll: result.type === 'redirect',
       };
     },
@@ -27,7 +34,8 @@
     formManager.message = m;
   }
 
-  if (data.logInSuccess) {
+  if (browser && data.logInSuccess) {
+    invalidateAll();
     setTimeout(() => {
       goto(data.redirect_to || '/');
     }, 3000);
@@ -37,8 +45,8 @@
 </script>
 
 <div class="mx-auto mt-8 flex max-w-lg flex-col gap-8">
-  {#if data.message}
-    <p>{data.message}</p>
+  {#if topMessage}
+    <p>{topMessage}</p>
   {/if}
 
   {#if data.logInSuccess}

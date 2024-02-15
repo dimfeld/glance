@@ -1,5 +1,6 @@
 <script lang="ts">
-  export let error;
+  import { page } from '$app/stores';
 </script>
 
-{JSON.stringify(error)}
+<h1>{$page.status}: {$page.error?.message}</h1>
+<pre class="whitespace-pre-wrap">{JSON.stringify($page.error, null, 2)}</pre>

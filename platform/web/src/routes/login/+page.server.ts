@@ -41,7 +41,7 @@ export const actions = {
       error(500, data);
     }
     return {
-      form: { email: '' } as ActionFormResponseData,
+      form: {} as ActionFormResponseData,
       message: 'You should receive an email soon.',
     } satisfies FormResponse<{ email: string; password?: string }>;
   },

@@ -5,23 +5,22 @@
   import { page } from '$app/stores';
   import { invalidateAll } from '$app/navigation';
   import { browser } from '$app/environment';
-  import { Button, Card, Switch, ThemeSwitch, getSettings } from 'svelte-ux';
+  import { Button, Card, Switch, getSettings } from 'svelte-ux';
 
-  export let data;
-  $page.data.user;
+  let { data } = $props();
 
-  let showDismissed = false;
+  let showDismissed = $state(false);
 
-  const { currentTheme } = getSettings();
-
-  $: apps = data.apps
-    .map((app) => {
-      return {
-        ...app,
-        items: app.items.filter((item) => showDismissed || !item.dismissed),
-      };
-    })
-    .filter((app) => app.items.length > 0);
+  let apps = $derived(
+    data.apps
+      .map((app) => {
+        return {
+          ...app,
+          items: app.items.filter((item) => showDismissed || !item.dismissed),
+        };
+      })
+      .filter((app) => app.items.length > 0)
+  );
 
   let canRefresh = browser ? document.visibilityState === 'visible' : false;
   let lastRefresh = Date.now();
@@ -45,14 +44,14 @@
     refreshTimer = setTimeout(doRefresh, time);
   }
 
-  $: if (browser) {
+  $effect(() => {
     if (canRefresh && !refreshTimer) {
       setRefreshTimer();
     } else if (refreshTimer && !canRefresh) {
       clearTimeout(refreshTimer);
       refreshTimer = null;
     }
-  }
+  });
 
   onDestroy(() => {
     if (browser && refreshTimer) {
@@ -60,26 +59,16 @@
       refreshTimer = null;
     }
   });
-
-  $: showLogin = Boolean($page.data.user || $page.url.searchParams.get('showLogin'));
 </script>
 
 <svelte:window on:visibilitychange={() => (canRefresh = document.visibilityState === 'visible')} />
 
 <main class="m-4">
   <header class="flex w-full justify-end gap-4">
-    <ThemeSwitch />
     <label class="flex items-center gap-2" for="show-dismissed-switch">
       <Switch id="show-dismissed-switch" bind:checked={showDismissed} />
       Show dismissed
     </label>
-    {#if showLogin}
-      {#if $page.data.user}
-        <a href="/logout">Logout</a>
-      {:else}
-        <a href="/login">Login</a>
-      {/if}
-    {/if}
   </header>
   <div class="flex flex-col gap-8">
     {#each apps as { app, items } (app.id)}
