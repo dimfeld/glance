@@ -4,7 +4,7 @@ use filigree::{
     auth::{CorsSetting, SameSiteArg, SessionCookieBuilder},
     tracing_config::{configure_tracing, teardown_tracing, TracingExportConfig},
 };
-use glance_core::{db, emails, server, util_cmd, Error};
+use glance_core::{cmd, db, emails, server, Error};
 use tracing::{event, Level};
 
 #[derive(Parser)]
@@ -16,8 +16,8 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    Util(util_cmd::UtilCommand),
-    Db(db::DbCommand),
+    Util(cmd::util::UtilCommand),
+    Db(cmd::db::DbCommand),
     Serve(ServeCommand),
 }
 
@@ -62,15 +62,15 @@ struct ServeCommand {
     #[clap(long, env = "GLANCE_DB_MAX_CONNECTIONS", default_value_t = 100)]
     db_max_connections: u32,
     /// The email service to use
-    #[clap(env="GLANCE_EMAIL_SENDER_SERVICE", default_value_t = String::from("none"))]
+    #[clap(env="GLANCE_EMAIL_SENDER_SERVICE", default_value_t = String::from("resend"))]
     email_sender_service: String,
 
     /// The API token for the email sending service
-    #[clap(env="GLANCE_EMAIL_SENDER_API_TOKEN", default_value_t = String::from(""))]
+    #[clap(env = "GLANCE_EMAIL_SENDER_API_TOKEN")]
     email_sender_api_token: String,
 
     /// The email address to use as the default sender
-    #[clap(env="GLANCE_EMAIL_DEFAULT_FROM_ADDRESS", default_value_t = String::from("support@example.com"))]
+    #[clap(env="GLANCE_EMAIL_DEFAULT_FROM_ADDRESS", default_value_t = String::from("daniel@imfeld.dev"))]
     email_default_from_address: String,
 
     /// Allow users to sign up themselves
@@ -103,6 +103,11 @@ struct ServeCommand {
     /// The base URL for OAuth redirect URLs. If omitted, `hosts[0]` is used.
     #[clap(env = "GLANCE_OAUTH_REDIRECT_URL_BASE")]
     oauth_redirect_host: Option<String>,
+
+    /// Whether or not to obfuscate details from internal server errors. If omitted,
+    /// the default is to obfuscate when env != "development".
+    #[clap(env = "GLANCE_OBFUSCATE_ERRORS")]
+    obfuscate_errors: Option<bool>,
     // tracing endpoint (if any)
     // honeycomb team
     // honeycomb dataset
@@ -148,17 +153,16 @@ async fn serve(cmd: ServeCommand) -> Result<(), Report<Error>> {
         email_service,
     );
 
-    let hosts = cmd.hosts.unwrap_or_else(|| vec!["localhost".to_string()]);
+    let hosts = cmd.hosts.unwrap_or_else(|| {
+        let host = format!("localhost:{}", cmd.port);
+        vec![host]
+    });
 
     let oauth_redirect_host = cmd.oauth_redirect_host.unwrap_or_else(|| {
         format!(
             "{}://{}",
             if cmd.insecure { "http" } else { "https" },
-            if hosts.is_empty() {
-                format!("localhost:{}", cmd.port)
-            } else {
-                hosts[0].clone()
-            }
+            hosts[0]
         )
     });
 
@@ -174,6 +178,7 @@ async fn serve(cmd: ServeCommand) -> Result<(), Report<Error>> {
         email_sender,
         hosts,
         api_cors: cmd.api_cors,
+        obfuscate_errors: cmd.obfuscate_errors,
         // This will build OAuth providers based on the environment variables present.
         oauth_providers: None,
         oauth_redirect_url_base: oauth_redirect_host,

@@ -16,6 +16,10 @@ update-json-schema:
 setup-db:
   cd platform/core && sqlx database setup
 
-filigree:
-  cd ../filigree/filigree-cli && cargo build --release
-  cd platform/core && ../../../filigree/target/release/filigree
+dev-api:
+  cd ../filigree/filigree-cli && cargo build
+  cd platform/core && ../../../filigree/target/debug/filigree && GLANCE_LOG=debug cargo run --release -- serve
+
+dev-web:
+  cd ../filigree/web && pnpm package
+  cd platform/web && pnpm i && pnpm dev
