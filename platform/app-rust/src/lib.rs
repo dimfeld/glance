@@ -6,6 +6,7 @@ mod app_data;
 use std::path::PathBuf;
 
 pub use app_data::*;
+use etcetera::BaseStrategy;
 
 #[doc(hidden)]
 pub const APP_DATA_SUBDIR: &'static str = "app_data";
@@ -17,21 +18,22 @@ pub struct App {
 }
 
 impl App {
-    /// Create a new `Paths` for the given application
+    /// Create a new `App` for the given application
     pub fn new(app_id: String) -> Self {
         Self { app_id }
     }
 
     /// The base data directory for the Glance platform
     pub fn base_data_dir() -> PathBuf {
-        [
-            dirs::data_local_dir().unwrap().to_string_lossy().as_ref(),
-            "glance-dashboards",
-            #[cfg(os = "windows")]
-            "Data",
-        ]
-        .iter()
-        .collect()
+        let p = etcetera::base_strategy::choose_native_strategy()
+            .unwrap()
+            .data_dir()
+            .join("glance-dashboards");
+
+        #[cfg(os = "windows")]
+        let p = p.join("Data");
+
+        p
     }
 
     /// The directory that holds the app data files
