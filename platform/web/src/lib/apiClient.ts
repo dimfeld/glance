@@ -1,4 +1,4 @@
-import { client } from 'filigree-web';
+import { client } from 'filigree-svelte';
 import type { AppData, AppItem } from 'glance-app';
 
 export interface ActiveItems {

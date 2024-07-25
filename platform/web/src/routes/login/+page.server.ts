@@ -3,7 +3,7 @@ import {
   handleLoginWithPasswordForm,
   handlePasswordlessLoginToken,
   requestPasswordlessLoginForm,
-} from 'filigree-web';
+} from 'filigree-svelte';
 
 export const actions = {
   login: handleLoginWithPasswordForm,

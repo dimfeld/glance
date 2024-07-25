@@ -3,7 +3,7 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { page } from '$app/stores';
   import OAuthLoginButton from '$lib/components/OAuthLoginButton.svelte';
-  import { manageForm } from 'filigree-web';
+  import { manageForm } from 'filigree-svelte';
   import { Button, TextField } from 'svelte-ux';
 
   const { data, form } = $props();

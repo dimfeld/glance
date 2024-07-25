@@ -1,5 +1,5 @@
 import type { Cookies } from '@sveltejs/kit';
-import { client } from 'filigree-web';
+import { client } from 'filigree-svelte';
 
 export interface GetUserInput {
   fetch: typeof fetch;
