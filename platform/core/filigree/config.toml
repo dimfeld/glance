@@ -4,6 +4,9 @@ company_name = "Daniel Imfeld"
 web_dir = "../web"
 default_auth_scope = "model"
 
+[web]
+framework = "sveltekit"
+
 [server]
 default_port = 6749
 dotenv = true

@@ -1,5 +1,4 @@
 import { fontFamily } from 'tailwindcss/defaultTheme';
-import colors from 'tailwindcss/colors';
 import typography from '@tailwindcss/typography';
 import svelteUx from 'svelte-ux/plugins/tailwind.cjs';
 

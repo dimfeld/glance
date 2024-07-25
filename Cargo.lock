@@ -1594,6 +1594,7 @@ dependencies = [
  "reqwest 0.11.27",
  "rust-embed",
  "schemars",
+ "schemars-zod",
  "serde",
  "serde_json",
  "serde_with",
@@ -4002,6 +4003,16 @@ dependencies = [
  "serde_json",
  "url",
  "uuid 1.10.0",
+]
+
+[[package]]
+name = "schemars-zod"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d93f9994db2562b356d3dffeaddd26e54ae9a05bad8590aa4179ec8a2b700ae"
+dependencies = [
+ "schemars",
+ "serde_json",
 ]
 
 [[package]]
