@@ -1,13 +1,6 @@
-import { client } from 'filigree-web';
+import { logout } from 'filigree-web';
 
-export async function load({ fetch, cookies }) {
-  await client({
-    url: '/api/auth/logout',
-    method: 'POST',
-    fetch,
-  });
-
-  cookies.delete('sid', { path: '/' });
-
+export async function load(event) {
+  await logout(event);
   return {};
 }

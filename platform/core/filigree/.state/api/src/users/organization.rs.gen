@@ -5,8 +5,8 @@ use sqlx::PgConnection;
 
 use crate::{
     models::{
-        organization::{self, Organization, OrganizationCreatePayload, OrganizationId},
-        role::{self, RoleId},
+        organization::{Organization, OrganizationCreatePayload, OrganizationId},
+        role::{self, Role, RoleId},
         user::UserId,
     },
     Error,
@@ -14,12 +14,15 @@ use crate::{
 
 const ADMIN_DEFAULT_PERMISSIONS: &[&str] = &["org_admin"];
 const USER_DEFAULT_PERMISSIONS: &[&str] = &[
-    "User::read",
-    "User::write",
-    "Organization::read",
-    "Organization::write",
     "Role::read",
     "Role::write",
+    "Role::owner",
+    "Organization::read",
+    "Organization::write",
+    "Organization::owner",
+    "User::read",
+    "User::write",
+    "User::owner",
 ];
 
 pub struct CreatedOrganization {
@@ -54,24 +57,26 @@ pub async fn create_new_organization(
         ..Default::default()
     };
 
-    let new_org = organization::queries::create_raw(&mut *db, org_id, org_id, &new_org).await?;
+    let new_org = Organization::create_raw(&mut *db, &org_id, &org_id, new_org).await?;
 
     add_user_to_organization(&mut *db, org_id, owner)
         .await
         .change_context(Error::Db)?;
 
     let admin_role = role::RoleCreatePayload {
+        id: None,
         name: "Admin".to_string(),
         description: None,
     };
 
     let user_role = role::RoleCreatePayload {
+        id: None,
         name: "User".to_string(),
         description: None,
     };
 
-    role::queries::create_raw(&mut *db, admin_role_id, org_id, &admin_role).await?;
-    role::queries::create_raw(&mut *db, user_role_id, org_id, &user_role).await?;
+    Role::create_raw(&mut *db, &admin_role_id, &org_id, admin_role).await?;
+    Role::create_raw(&mut *db, &user_role_id, &org_id, user_role).await?;
     add_roles_to_user(&mut *db, org_id, owner, &[admin_role_id, user_role_id])
         .await
         .change_context(Error::Db)?;

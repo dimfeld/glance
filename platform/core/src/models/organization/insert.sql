@@ -1,4 +1,4 @@
-INSERT INTO organizations (
+INSERT INTO public.organizations (
   id,
   name,
   OWNER,
@@ -15,5 +15,4 @@ RETURNING
   name,
   OWNER AS "owner: crate::models::user::UserId",
   default_role AS "default_role: crate::models::role::RoleId",
-  active,
-  'owner' AS "_permission!: filigree::auth::ObjectPermission"
+  active

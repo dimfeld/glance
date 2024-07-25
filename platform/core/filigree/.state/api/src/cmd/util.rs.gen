@@ -1,5 +1,6 @@
 use clap::{Args, Subcommand};
 use error_stack::{Report, ResultExt};
+use schemars::schema_for;
 
 use crate::Error;
 

@@ -11,6 +11,8 @@ use filigree::{
         users::{add_user_email_login, CreateUserDetails, UserCreatorError},
     },
 };
+use schemars::JsonSchema;
+use serde::Serialize;
 use sqlx::{PgConnection, PgExecutor};
 
 use crate::{
@@ -77,9 +79,10 @@ impl UserCreator {
     pub async fn create_user(
         tx: &mut PgConnection,
         add_to_organization: Option<OrganizationId>,
+        user_id: Option<UserId>,
         details: CreateUserDetails,
     ) -> Result<(UserId, OrganizationId), Report<UserCreatorError>> {
-        let user_id = UserId::new();
+        let user_id = user_id.unwrap_or_else(|| UserId::new());
         let organization_fut = async {
             match add_to_organization {
                 Some(organization_id) => {
@@ -162,19 +165,33 @@ impl filigree::users::users::UserCreator for UserCreator {
         add_to_organization: Option<OrganizationId>,
         details: CreateUserDetails,
     ) -> Result<UserId, Report<UserCreatorError>> {
-        Self::create_user(tx, add_to_organization, details)
+        Self::create_user(tx, add_to_organization, None, details)
             .await
             .map(|(user_id, _)| user_id)
     }
+}
+
+/// The current user and other information to return to the client.
+#[derive(Serialize, Debug, JsonSchema)]
+pub struct SelfUser {
+    user: crate::models::user::User,
+    roles: Vec<crate::models::role::RoleId>,
+    permissions: Vec<String>,
 }
 
 async fn get_current_user_endpoint(
     State(state): State<ServerState>,
     authed: Authed,
 ) -> Result<impl IntoResponse, Error> {
-    // TODO This probably should be a more custom query, include organization info and permissions
+    // TODO This should be a more custom query, include organization info and permissions
     // and such, and work even if the user doesn't have the User:read permission.
-    let user = crate::models::user::queries::get(&state.db, &authed, authed.user_id).await?;
+    let user = User::get(&state.db, &authed, &authed.user_id).await?;
+
+    let user = SelfUser {
+        user,
+        roles: authed.roles.clone(),
+        permissions: authed.permissions.clone(),
+    };
 
     Ok(Json(user))
 }
@@ -184,9 +201,10 @@ async fn update_current_user_endpoint(
     authed: Authed,
     FormOrJson(body): FormOrJson<crate::models::user::UserUpdatePayload>,
 ) -> Result<impl IntoResponse, Error> {
-    // TODO Need a permission specifically for updating self
-    let updated =
-        crate::models::user::queries::update(&state.db, &authed, authed.user_id, &body).await?;
+    // TODO Need a query specifically for updating self
+    let mut tx = state.db.begin().await.change_context(Error::Db)?;
+    let updated = User::update(&mut *tx, &authed, &authed.user_id, body).await?;
+    tx.commit().await.change_context(Error::Db)?;
 
     let status = if updated {
         StatusCode::OK
@@ -222,7 +240,7 @@ mod test {
             .await
             .unwrap();
 
-        assert_eq!(user_info["name"], "Admin");
+        assert_eq!(user_info["user"]["name"], "Admin");
     }
 
     #[sqlx::test]
@@ -257,7 +275,7 @@ mod test {
             .await
             .unwrap();
 
-        assert_eq!(user_info["name"], "Not Admin");
-        assert_eq!(user_info["email"], "another-email@example.com");
+        assert_eq!(user_info["user"]["name"], "Not Admin");
+        assert_eq!(user_info["user"]["email"], "another-email@example.com");
     }
 }

@@ -11,8 +11,8 @@ etcetera = "0.8.0"
 schemars = { version = "0.8.16", optional = true, features = ["chrono", "raw_value"] }
 serde = { version = "1.0.189", features = ["derive"] }
 serde_json = { version = "1.0.107", features = ["raw_value"] }
-sqlx = { version = "0.7.3", optional = true, features = ["runtime-tokio", "tls-rustls"] }
-sqlx-transparent-json-decode = { version = "2.1.0", features = ["schemars", "serde"] }
+sqlx = { version = "0.8.0", optional = true, features = ["runtime-tokio", "tls-rustls"] }
+sqlx-transparent-json-decode = { version = "3.0.0", features = ["schemars", "serde"] }
 uuid = { version = "1.5.0", features = ["serde"] }
 
 [features]

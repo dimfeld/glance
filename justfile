@@ -21,5 +21,6 @@ dev-api:
   cd platform/core && ../../../filigree/target/debug/filigree && GLANCE_LOG=debug cargo run --release -- serve
 
 dev-web:
-  cd ../filigree/web && pnpm package
-  cd platform/web && pnpm i && pnpm dev
+  #cd ../filigree/web && pnpm package
+  # cd platform/web && pnpm i
+  cd platform/web && pnpm dev

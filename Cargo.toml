@@ -15,3 +15,5 @@ missing_docs = "warn"
 [profile.release]
 debug = 1
 
+[profile.dev.package.sqlx-macros]
+opt-level = 3

@@ -5,28 +5,9 @@ SELECT
   created_at,
   name,
   email,
-  avatar_url,
-  _permission AS "_permission!: filigree::auth::ObjectPermission"
+  avatar_url
 FROM
-  users tb
-  JOIN LATERAL (
-    SELECT
-      CASE WHEN bool_or(permission IN ('org_admin', 'User::owner')) THEN
-        'owner'
-      WHEN bool_or(permission = 'User::write') THEN
-        'write'
-      WHEN bool_or(permission = 'User::read') THEN
-        'read'
-      ELSE
-        NULL
-      END _permission
-    FROM
-      permissions
-    WHERE
-      organization_id = $2
-      AND actor_id = ANY ($3)
-      AND permission IN ('org_admin', 'User::owner', 'User::write', 'User::read'))
-	_permission ON _permission IS NOT NULL
+  public.users tb
 WHERE
-  tb.id = $1
+  id = $1
   AND tb.organization_id = $2

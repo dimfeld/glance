@@ -2986,6 +2986,7 @@ packages:
       set-cookie-parser: 2.6.0
       sorters: 1.1.0
       svelte: 5.0.0-next.60
+      zod: 3.22.4
     dev: true
 
   file:../app-js:

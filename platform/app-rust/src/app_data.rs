@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "sqlx")]
 use sqlx_transparent_json_decode::sqlx_json_decode;
@@ -123,7 +121,6 @@ sqlx_json_decode!(AppSchedule);
 
 /// A notification from the app
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
-#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Notification {
     /// A unique ID among other notifications for this app
@@ -132,6 +129,9 @@ pub struct Notification {
     /// Data for the notification
     pub data: NotificationData,
 }
+
+#[cfg(feature = "sqlx")]
+sqlx_json_decode!(Notification);
 
 /// Data for a notification
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]

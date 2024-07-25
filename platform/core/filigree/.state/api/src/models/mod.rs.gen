@@ -8,6 +8,6 @@ use crate::server::ServerState;
 
 pub fn create_routes() -> Router<ServerState> {
     Router::new()
-        .merge(user::endpoints::create_routes())
         .merge(role::endpoints::create_routes())
+        .merge(user::endpoints::create_routes())
 }

@@ -19,7 +19,7 @@ use crate::{
     items::{AppInfo, AppItems, Item},
     models::{
         organization::OrganizationId,
-        role::{self, RoleId},
+        role::{self, Role, RoleId},
         user::{UserCreatePayload, UserId},
     },
     scheduled_task::ScheduledJobData,
@@ -120,6 +120,7 @@ async fn create_superuser_role(
 ) -> Result<RoleId, Error> {
     let superuser_role_id = RoleId::new();
     let superuser_role = role::RoleCreatePayload {
+        id: None,
         name: "Superuser".to_string(),
         description: None,
     };
@@ -133,7 +134,7 @@ async fn create_superuser_role(
     .await
     .change_context(Error::Db)?;
 
-    role::queries::create_raw(tx, superuser_role_id, org_id, &superuser_role).await?;
+    Role::create_raw(tx, &superuser_role_id, &org_id, superuser_role).await?;
 
     Ok(superuser_role_id)
 }

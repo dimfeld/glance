@@ -1,4 +1,4 @@
-INSERT INTO roles (
+INSERT INTO public.roles (
   id,
   organization_id,
   name,
@@ -14,5 +14,4 @@ RETURNING
   updated_at,
   created_at,
   name,
-  description,
-  'owner' AS "_permission!: filigree::auth::ObjectPermission"
+  description

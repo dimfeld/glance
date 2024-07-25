@@ -1,18 +1,9 @@
 use axum::{
     extract::{Host, State},
-    response::{IntoResponse, Redirect},
+    response::IntoResponse,
 };
-use axum_extra::extract::Query;
-use axum_jsonschema::Json;
-use error_stack::{Report, ResultExt};
-use filigree::{
-    auth::{password::create_reset_token, AuthError},
-    extract::FormOrJson,
-    testing, EmailBody,
-};
-use serde::{Deserialize, Serialize};
-use tower_cookies::Cookies;
-use uuid::Uuid;
+use error_stack::ResultExt;
+use filigree::{auth::password::create_reset_token, extract::FormOrJson, EmailBody};
 
 use crate::{server::ServerState, Error};
 
@@ -31,12 +22,12 @@ pub async fn start_password_reset(
     let token = match token {
         Ok(token) => token,
         Err(e) => {
-            if e.is_unauthenticated() {
+            if e.current_context().is_unauthenticated() {
                 // Don't do anything if the email was not found, but also don't tell the user that
                 // the email doesn't exist.
                 return Ok(());
             } else {
-                return Err(Report::new(e).change_context(Error::AuthSubsystem).into());
+                return Err(e.change_context(Error::AuthSubsystem).into());
             }
         }
     };
@@ -63,8 +54,9 @@ pub async fn start_password_reset(
 mod test {
     use std::str::FromStr;
 
-    use filigree::auth::endpoints::UpdatePasswordRequest;
+    use filigree::{auth::endpoints::UpdatePasswordRequest, testing};
     use serde_json::json;
+    use uuid::Uuid;
 
     use super::*;
     use crate::{

@@ -27,6 +27,7 @@ pub struct Item {
     pub persistent: bool,
     pub state_key: Option<String>,
     pub data: AppItemData,
+    #[sqlx(json)]
     pub notify: Option<Vec<Notification>>,
     pub updated_at: chrono::DateTime<chrono::offset::Utc>,
     pub created_at: chrono::DateTime<chrono::offset::Utc>,

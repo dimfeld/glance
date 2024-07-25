@@ -1,4 +1,4 @@
-INSERT INTO users (
+INSERT INTO public.users (
   id,
   organization_id,
   name,
@@ -17,5 +17,4 @@ RETURNING
   created_at,
   name,
   email,
-  avatar_url,
-  'owner' AS "_permission!: filigree::auth::ObjectPermission"
+  avatar_url
