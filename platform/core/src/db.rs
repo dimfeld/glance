@@ -283,6 +283,7 @@ impl DbInner {
             app.name,
             app.path,
             sqlx::types::Json(&app.ui) as _,
+            app.version as i32
         )
         .execute(tx)
         .await

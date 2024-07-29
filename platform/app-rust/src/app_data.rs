@@ -23,6 +23,21 @@ pub struct AppData {
 
     /// Information only used to render the UI of the app
     pub ui: Option<AppUiInfo>,
+
+    /// A version number for the app metadata. If this is present, the metadata will only be
+    /// updated if the version number in the submitted data is greater than or equal to the number
+    /// in the database.
+    ///
+    /// The primary purpose of this is to allow independent instances of the same app to submit updates
+    /// without old versions rolling back the app metadata.
+    ///
+    /// Note also that `version` does not apply to the `items` array.
+    #[serde(default = "zero")]
+    pub version: u32,
+}
+
+fn zero() -> u32 {
+    0
 }
 
 /// Information only used to render the UI of the app

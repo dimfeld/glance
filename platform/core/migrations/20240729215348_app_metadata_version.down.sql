@@ -1,0 +1,2 @@
+ALTER TABLE APPS
+  DROP COLUMN version;
