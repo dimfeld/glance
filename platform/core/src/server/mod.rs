@@ -28,7 +28,7 @@ use tower_http::{
 };
 use tracing::{event, Level, Span};
 
-use crate::{db::Db, error::Error};
+use crate::{db::Db, error::Error, AppFileInput};
 
 mod health;
 mod meta;
@@ -51,6 +51,8 @@ pub struct ServerStateInner {
     pub orm: Db,
     /// Secrets loaded from the environment
     pub secrets: Secrets,
+    /// Send app changes as they arrive
+    pub change_tx: flume::Sender<AppFileInput>,
 }
 
 impl ServerStateInner {
@@ -205,6 +207,7 @@ pub struct Config {
     pub insecure: bool,
     /// How long to wait before timing out a request
     pub request_timeout: std::time::Duration,
+    pub change_tx: flume::Sender<AppFileInput>,
     pub db: Db,
 
     pub cookie_configuration: SessionCookieBuilder,
@@ -282,6 +285,7 @@ pub async fn create_server(config: Config) -> Result<Server, Report<Error>> {
         insecure: config.insecure,
         db: pg_pool.clone(),
         orm: config.db,
+        change_tx: config.change_tx,
         secrets: config.secrets,
     }));
 
@@ -308,6 +312,7 @@ pub async fn create_server(config: Config) -> Result<Server, Report<Error>> {
         .merge(crate::users::users::create_routes())
         .merge(crate::auth::create_routes())
         .merge(routes::items::routes())
+        .merge(routes::app::routes())
         // Return not found here so we don't run the other non-API fallbacks
         .fallback(|| async { Error::NotFound("Route") });
 

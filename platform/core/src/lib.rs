@@ -53,6 +53,7 @@ impl AppFileContents {
 pub struct AppFileInput {
     app_id: String,
     contents: AppFileContents,
+    merge_items: bool,
 }
 
 /// Configuration for the platform
@@ -72,6 +73,8 @@ pub struct Platform {
     #[cfg(feature = "fs-source")]
     fs_source: fs_source::FsSource,
     change_handler: tokio::task::JoinHandle<()>,
+    /// Send app updates to the change handler task
+    pub change_tx: flume::Sender<AppFileInput>,
     /// The database for the platform
     pub db: Db,
     scheduled_task_runner: Option<effectum::Worker>,
@@ -106,8 +109,10 @@ impl Platform {
 
         Ok(Self {
             #[cfg(feature = "fs-source")]
-            fs_source: fs_source::FsSource::new(base_dir, change_tx).expect("creating FsSource"),
+            fs_source: fs_source::FsSource::new(base_dir, change_tx.clone())
+                .expect("creating FsSource"),
             change_handler,
+            change_tx,
             db,
             scheduled_task_runner,
         })
@@ -120,6 +125,7 @@ impl Platform {
             change_handler,
             db,
             scheduled_task_runner,
+            ..
         } = self;
         event!(Level::DEBUG, "Shutting down fs source");
         #[cfg(feature = "fs-source")]

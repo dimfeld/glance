@@ -94,6 +94,8 @@ pub async fn start_app_with_options(
             .unwrap(),
     );
 
+    let (change_tx, _) = flume::unbounded();
+
     let config = crate::server::Config {
         env: "test".into(),
         bind: crate::server::ServerBind::Listener(listener),
@@ -103,6 +105,7 @@ pub async fn start_app_with_options(
         },
         insecure: true,
         request_timeout: std::time::Duration::from_secs(30),
+        change_tx,
         db,
         api_cors: filigree::auth::CorsSetting::default(),
         hosts: vec![],

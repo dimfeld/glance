@@ -14,11 +14,17 @@ pub async fn handle_changes(db: Db, change_rx: flume::Receiver<AppFileInput>) {
 
 #[instrument(skip(db, input), fields(app_id = %input.app_id, has_data = !input.contents.is_empty()))]
 async fn handle_change_or_error(db: &Db, input: AppFileInput) {
-    let AppFileInput { app_id, contents } = input;
+    let AppFileInput {
+        app_id,
+        contents,
+        merge_items,
+    } = input;
 
     let result = match contents {
-        AppFileContents::Raw(contents) => handle_raw_data(db, &app_id, &contents).await,
-        AppFileContents::Parsed(data) => handle_change(db, &app_id, *data).await,
+        AppFileContents::Raw(contents) => {
+            handle_raw_data(db, &app_id, &contents, merge_items).await
+        }
+        AppFileContents::Parsed(data) => handle_change(db, &app_id, *data, merge_items).await,
         AppFileContents::Empty => handle_remove(db, &app_id).await,
     };
 
@@ -36,12 +42,22 @@ async fn handle_change_or_error(db: &Db, input: AppFileInput) {
     }
 }
 
-async fn handle_raw_data(db: &Db, app_id: &str, contents: &str) -> Result<(), Report<Error>> {
+async fn handle_raw_data(
+    db: &Db,
+    app_id: &str,
+    contents: &str,
+    merge_items: bool,
+) -> Result<(), Report<Error>> {
     let data = serde_json::from_str::<AppData>(contents).change_context(Error::ReadAppData)?;
-    handle_change(db, app_id, data).await
+    handle_change(db, app_id, data, merge_items).await
 }
 
-async fn handle_change(db: &Db, app_id: &str, mut app: AppData) -> Result<(), Report<Error>> {
+pub async fn handle_change(
+    db: &Db,
+    app_id: &str,
+    mut app: AppData,
+    merge_items: bool,
+) -> Result<(), Report<Error>> {
     let current_items = db
         .read_app_items(app_id)
         .await?
@@ -76,8 +92,10 @@ async fn handle_change(db: &Db, app_id: &str, mut app: AppData) -> Result<(), Re
             .await?;
     }
 
-    db.remove_unfound_items(tx.as_mut(), app_id, &item_ids)
-        .await?;
+    if !merge_items {
+        db.remove_unfound_items(tx.as_mut(), app_id, &item_ids)
+            .await?;
+    }
 
     tx.commit().await.change_context(Error::Db)?;
 

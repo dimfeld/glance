@@ -228,6 +228,7 @@ async fn serve(cmd: ServeCommand) -> Result<(), Report<Error>> {
                 .same_org_invites_require_email_verification,
         },
         db: platform.db.clone(),
+        change_tx: platform.change_tx.clone(),
         secrets: server::Secrets::from_env()?,
     })
     .await?;

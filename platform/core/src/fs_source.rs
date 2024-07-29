@@ -129,6 +129,7 @@ fn read_file(path: &Path) -> Result<Option<AppFileInput>, std::io::Error> {
                 return Ok(Some(AppFileInput {
                     app_id,
                     contents: AppFileContents::Empty,
+                    merge_items: false,
                 }));
             } else {
                 return Err(e);
@@ -139,5 +140,6 @@ fn read_file(path: &Path) -> Result<Option<AppFileInput>, std::io::Error> {
     Ok(Some(AppFileInput {
         app_id,
         contents: AppFileContents::Raw(data),
+        merge_items: false,
     }))
 }
